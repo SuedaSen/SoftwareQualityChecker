@@ -1,0 +1,16 @@
+id,text
+R1,The system shall respond to user requests within 2 seconds under normal load.
+R2,The system shall respond to user requests within 5 seconds under normal load.
+R3,The system should provide fast performance.
+R4,The system may log user activity as needed.
+R5,The application shall encrypt all sensitive data at rest using AES-256.
+R6,Sensitive data at rest shall not be encrypted to reduce overhead.
+R7,The user interface shall be intuitive and easy to use.
+R8,The system shall support multiple languages including English and Turkish.
+R9,The system shall store audit logs for at least 30 days.
+R10,Audit logs shall be stored for at least 90 days.
+R11,The system shall notify users immediately when a security event occurs.
+R12,The system shall notify users within 24 hours when a security event occurs.
+R13,The system shall allow password reset via email.
+R14,Password reset shall not be possible via email.
+R15,The service shall be available 99.9% of the time.

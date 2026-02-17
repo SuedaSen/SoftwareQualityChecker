@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{app.title}">SER Requirement Quality Checker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg: #0f1419;
+            --surface: #1a2332;
+            --surface-hover: #243044;
+            --border: #2d3a4d;
+            --text: #e6edf3;
+            --text-muted: #8b9cb3;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 24px rgba(0,0,0,.25);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 1rem 4rem;
+            line-height: 1.6;
+        }
+
+        .container { max-width: 960px; margin: 0 auto; }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .hero h1 {
+            font-size: clamp(1.75rem, 4vw, 2.25rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin: 0 0 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0 0 1rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .card h2 .badge {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            background: var(--border);
+            color: var(--text-muted);
+        }
+
+        /* Form */
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+        textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: vertical;
+            transition: border-color .2s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        textarea::placeholder { color: var(--text-muted); }
+
+        /* File upload zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1.5rem;
+            text-align: center;
+            background: rgba(59, 130, 246, 0.05);
+            margin-bottom: 1rem;
+            transition: border-color .2s, background .2s;
+        }
+        .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); }
+        .upload-zone input[type="file"] { display: none; }
+        .upload-zone .label {
+            cursor: pointer;
+            color: var(--accent);
+            font-weight: 500;
+        }
+        .upload-zone .hint { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem; }
+        .upload-zone .file-name { color: var(--success); font-size: 0.9rem; margin-top: 0.5rem; }
+
+        .form-row { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-top: 1rem; }
+        button {
+            padding: 0.75rem 1.5rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background .2s;
+        }
+        button:hover { background: var(--accent-hover); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Tables */
+        .table-wrap { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        tr:hover td { background: var(--surface-hover); }
+        .score { text-align: right; font-variant-numeric: tabular-nums; }
+        .empty-msg { color: var(--text-muted); padding: 1.5rem; text-align: center; }
+
+        /* Section titles for results */
+        .results-section { margin-top: 2rem; }
+        .results-section h2 { margin-bottom: 1rem; }
+
+        .severity-high { color: var(--danger); }
+        .severity-mid { color: var(--warning); }
+
+        /* Footer — geliştirici bilgisi */
+        .site-footer {
+            margin-top: 3.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+        .site-footer .credits {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .site-footer .team {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .site-footer .team span {
+            font-weight: 500;
+            color: var(--text);
+        }
+        .site-footer .team .sep {
+            color: var(--border);
+            font-weight: 300;
+        }
+
+        /* Proje hakkında */
+        .about-card { margin-bottom: 1.5rem; }
+        .about-card summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text);
+            padding: 0.5rem 0;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .about-card summary::-webkit-details-marker { display: none; }
+        .about-card summary::before { content: "▶"; font-size: 0.7rem; transition: transform .2s; }
+        .about-card[open] summary::before { transform: rotate(90deg); }
+        .about-body { padding: 0.5rem 0 0 1rem; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7; }
+        .about-body h3 { font-size: 0.95rem; color: var(--text); margin: 1rem 0 0.4rem; }
+        .about-body ul { margin: 0.3rem 0; padding-left: 1.2rem; }
+        .ml-status { margin-top: 0.75rem; }
+        .ml-badge { display: inline-block; padding: 0.35rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 500; }
+        .ml-badge.ml-on { background: rgba(34, 197, 94, 0.2); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.4); }
+        .ml-badge.ml-off { background: rgba(139, 156, 179, 0.15); color: var(--text-muted); border: 1px solid var(--border); }
+        .btn-download { margin-top: 1rem; padding: 0.5rem 1rem; background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-weight: 500; cursor: pointer; }
+        .btn-download:hover { background: var(--border); }
+        /* Özet kartı */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-top: 0.5rem; }
+        .summary-item { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; text-align: center; }
+        .summary-item .num { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+        .summary-item .label { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
+        /* Geliştiriciler bölümü */
+        .dev-section { margin-top: 3rem; }
+        .dev-section h2 { margin-bottom: 1rem; font-size: 1.1rem; }
+        .dev-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+        .dev-card { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); transition: border-color .2s; }
+        .dev-card:hover { border-color: var(--accent); }
+        .dev-card .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--surface-hover); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: var(--text-muted); flex-shrink: 0; }
+        .dev-card .info { min-width: 0; }
+        .dev-card .name { font-weight: 600; color: var(--text); margin-bottom: 0.25rem; }
+        .dev-card .github { font-size: 0.875rem; }
+        .dev-card .github a { color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; }
+        .dev-card .github a:hover { text-decoration: underline; }
+        .lang-switcher { display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .lang-switcher a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; padding: 0.35rem 0.6rem; border-radius: 6px; }
+        .lang-switcher a:hover { color: var(--accent); background: var(--surface-hover); }
+        .lang-switcher a.active { color: var(--accent); font-weight: 600; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <nav class="lang-switcher" aria-label="Language">
+        <a th:href="@{/(lang='tr')}" th:classappend="${#locale.language == 'tr'} ? 'active'" href="?lang=tr">Türkçe</a>
+        <a th:href="@{/(lang='en')}" th:classappend="${#locale.language == 'en'} ? 'active'" href="?lang=en">English</a>
+    </nav>
+    <header class="hero">
+        <h1 th:text="#{app.title}">SER Requirement Quality Checker</h1>
+        <p th:text="#{app.subtitle}">Flags ambiguity and inconsistency candidates.</p>
+        <p class="ml-status" th:if="${mlEnabled != null}">
+            <span class="ml-badge ml-on" th:if="${mlEnabled}" th:text="#{ml.status.on}">Similarity: ML</span>
+            <span class="ml-badge ml-off" th:unless="${mlEnabled}" th:text="#{ml.status.off}">Similarity: TF-IDF</span>
+        </p>
+    </header>
+
+    <div class="card about-card">
+        <details>
+            <summary th:text="#{about.ml.title}">What is ML?</summary>
+            <div class="about-body">
+                <p th:text="#{about.ml.def}">ML = Machine Learning: the computer learns from data.</p>
+                <p th:text="#{about.ml.where}"> “Tutarsızlık adayları” bulunurken iki gereksinim ne kadar <strong>benzer</strong> diye bakıyoruz. Benzerlik hesabı iki şekilde yapılabiliyor:</p>
+                <ul>
+                    <li><strong>ML ile (kelime vektörü):</strong> Kelimeler sayı listelerine (vektörlere) dönüştürülmüş; bu sayılar daha önce büyük metin verilerinden <strong>öğrenilmiş</strong>. Cümle = kelimelerin ortalaması; iki cümle ne kadar yakınsa benzerlik o kadar yüksek. Yani benzerlik burada <strong>öğrenilmiş temsillerle</strong> hesaplanıyor → bu ML kullanımıdır.</li>
+                    <li><strong>TF-IDF (ML değil):</strong> Sadece kelime sıklığına dayalı basit bir formül. Öğrenen bir model yok; yedek olarak kullanılır.</li>
+                </ul>
+                <p th:text="#{about.ml.how}">How can you tell?</p>
+                <h3 th:text="#{about.ml.why.title}">Why is ML needed in this project?</h3>
+                <p th:text="#{about.ml.why.1}">Requirements can be written in many ways; rule-based similarity often misses same or conflicting pairs. ML word embeddings capture meaning.</p>
+                <p th:text="#{about.ml.why.2}">Without ML we rely only on word overlap (TF-IDF). With ML, similarity is based on learned representations, improving conflict detection.</p>
+                <!-- i18n: about.ml.how, about.ml.why.* used above -->
+            </div>
+        </details>
+    </div>
+
+    <div class="card about-card">
+        <details>
+            <summary th:text="#{about.project.title}">About the project</summary>
+            <div class="about-body">
+                <p th:text="#{about.project.aim}">Aim: to flag ambiguous and inconsistent requirement pairs.</p>
+                <h3 th:text="#{about.project.done}">What was done?</h3>
+                <ul>
+                    <li th:text="#{about.project.amb}">Ambiguity (rule-based): shall/should/may, numbers, weak wording.</li>
+                    <li th:text="#{about.project.conf}">Inconsistency (ML + rules): similarity via ML or TF-IDF; negation/number rules.</li>
+                    <li th:text="#{about.project.web}">Web UI: paste or upload CSV, TXT, DOC, DOCX, PDF; view and download CSV.</li>
+                </ul>
+            </div>
+        </details>
+    </div>
+
+    <div class="card">
+        <h2><span th:text="#{input.title}">Input</span> <span class="badge" th:text="#{input.badge}">Text or file</span></h2>
+
+        <form method="post" action="/analyze" enctype="multipart/form-data" id="analyzeForm">
+            <div class="upload-zone" id="uploadZone" th:attr="data-prefix=#{file.selected}">
+                <input type="file" id="fileInput" name="file" accept=".csv,.txt,.doc,.docx,.pdf,text/csv,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf"/>
+                <label for="fileInput" class="label" th:text="#{input.upload}">Choose file or drag and drop</label>
+                <p class="hint" th:text="#{input.hint}">CSV, TXT, DOC/DOCX or PDF</p>
+                <p class="file-name" id="fileName"></p>
+            </div>
+
+            <label for="requirements" th:text="#{input.paste}">Paste requirements line by line</label>
+            <textarea id="requirements" name="requirements" th:placeholder="#{input.placeholder}" th:text="${defaultText}"></textarea>
+
+            <div class="form-row">
+                <button type="submit" id="submitBtn" th:text="#{input.analyze}">Analyze</button>
+            </div>
+        </form>
+    </div>
+
+    <div th:if="${result != null}">
+        <div class="card results-section">
+            <h2 th:text="#{summary.title}">Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="num" th:text="${requirementCount != null ? requirementCount : 0}">0</div>
+                    <div class="label" th:text="#{summary.requirements}">Total requirements</div>
+                </div>
+                <div class="summary-item">
+                    <div class="num" th:text="${#lists.size(result.ambiguity)}">0</div>
+                    <div class="label" th:text="#{summary.ambiguity}">Ambiguity findings</div>
+                </div>
+                <div class="summary-item">
+                    <div class="num" th:text="${#lists.size(result.conflicts)}">0</div>
+                    <div class="label" th:text="#{summary.conflicts}">Conflict candidates</div>
+                </div>
+            </div>
+        </div>
+        <div class="card results-section">
+            <h2 th:text="#{tab.ambiguity}">Ambiguity findings</h2>
+            <div class="table-wrap">
+                <table id="ambiguityTable">
+                    <thead>
+                    <tr><th th:text="#{tab.id}">ID</th><th class="score" th:text="#{tab.score}">Score</th><th th:text="#{tab.text}">Text</th><th th:text="#{tab.reasons}">Reasons</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${result.ambiguity}">
+                        <td th:text="${r.rid}"></td>
+                        <td class="score" th:text="${#numbers.formatDecimal(r.score, 1, 2)}"></td>
+                        <td th:text="${r.text}"></td>
+                        <td th:text="${#strings.listJoin(r.reasons, '; ')}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="empty-msg" th:if="${#lists.isEmpty(result.ambiguity)}" th:text="#{empty.ambiguity}">No ambiguity findings.</p>
+        </div>
+
+        <div class="card results-section">
+            <h2 th:text="#{tab.conflicts}">Conflict candidates</h2>
+            <p class="empty-msg" th:if="${#lists.isEmpty(result.conflicts)}" th:text="#{empty.conflicts}">No conflict candidates.</p>
+            <div class="table-wrap" th:if="${!#lists.isEmpty(result.conflicts)}">
+                <table id="conflictsTable">
+                    <thead>
+                    <tr><th th:text="#{tab.left}">Left</th><th th:text="#{tab.right}">Right</th><th class="score" th:text="#{tab.similarity}">Similarity</th><th th:text="#{tab.kind}">Kind</th><th th:text="#{tab.evidence}">Evidence</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="c : ${result.conflicts}">
+                        <td th:text="${c.leftId}"></td>
+                        <td th:text="${c.rightId}"></td>
+                        <td class="score" th:text="${#numbers.formatDecimal(c.similarity, 1, 2)}"></td>
+                        <td th:text="${c.kind}"></td>
+                        <td th:text="${c.evidence}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card results-section">
+            <button type="button" class="btn-download" id="downloadCsvBtn" th:text="#{btn.download}">Download results as CSV</button>
+        </div>
+    </div>
+
+    <section class="card dev-section">
+        <h2 th:text="#{dev.title}">Developers</h2>
+        <div class="dev-grid">
+            <div class="dev-card">
+                <div class="avatar" aria-hidden="true">S</div>
+                <div class="info">
+                    <div class="name">Sueda Sen</div>
+                    <div class="github">
+                        <a href="https://github.com/SuedaSen" target="_blank" rel="noopener noreferrer"><span th:text="#{dev.github}">GitHub →</span> SuedaSen</a>
+                    </div>
+                </div>
+            </div>
+            <div class="dev-card">
+                <div class="avatar" aria-hidden="true">M</div>
+                <div class="info">
+                    <div class="name">Mehmet Aksit</div>
+                    <div class="github">
+                        <a href="https://github.com/mcaksit" target="_blank" rel="noopener noreferrer"><span th:text="#{dev.github}">GitHub →</span> mcaksit</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+(function() {
+    var zone = document.getElementById('uploadZone');
+    var fileInput = document.getElementById('fileInput');
+    var fileName = document.getElementById('fileName');
+    var form = document.getElementById('analyzeForm');
+    var requirements = document.getElementById('requirements');
+
+    function showFileName(name) {
+        var prefix = (document.getElementById('uploadZone') && document.getElementById('uploadZone').getAttribute('data-prefix')) || 'Selected:';
+        fileName.textContent = name ? prefix + ' ' + name : '';
+    }
+
+    zone.addEventListener('click', function(e) {
+        if (e.target !== fileInput) fileInput.click();
+    });
+    zone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        zone.classList.add('dragover');
+    });
+    zone.addEventListener('dragleave', function() {
+        zone.classList.remove('dragover');
+    });
+    zone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        var files = e.dataTransfer.files;
+        if (files.length) {
+            fileInput.files = files;
+            showFileName(files[0].name);
+        }
+    });
+    fileInput.addEventListener('change', function() {
+        showFileName(this.files.length ? this.files[0].name : '');
+    });
+
+    form.addEventListener('submit', function() {
+        document.getElementById('submitBtn').disabled = true;
+        setTimeout(function() {
+            document.getElementById('submitBtn').disabled = false;
+        }, 2000);
+    });
+
+    function tableToCsv(tableId) {
+        var table = document.getElementById(tableId);
+        if (!table) return '';
+        var rows = table.querySelectorAll('tr');
+        var lines = [];
+        for (var i = 0; i < rows.length; i++) {
+            var cells = rows[i].querySelectorAll('th, td');
+            var parts = [];
+            for (var j = 0; j < cells.length; j++) {
+                var t = (cells[j].textContent || '').trim().replace(/"/g, '""');
+                parts.push('"' + t + '"');
+            }
+            lines.push(parts.join(','));
+        }
+        return lines.join('\n');
+    }
+    function downloadCsv() {
+        var amb = document.getElementById('ambiguityTable');
+        var conf = document.getElementById('conflictsTable');
+        var csv = '';
+        if (amb) {
+            csv += 'Belirsizlik bulguları\n' + tableToCsv('ambiguityTable') + '\n\n';
+        }
+        if (conf) {
+            csv += 'Tutarsızlık adayları\n' + tableToCsv('conflictsTable');
+        }
+        if (!csv) return;
+        var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'ser-sonuclar-' + new Date().toISOString().slice(0,10) + '.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+    var dlBtn = document.getElementById('downloadCsvBtn');
+    if (dlBtn) dlBtn.addEventListener('click', downloadCsv);
+})();
+</script>
+</body>
+</html>
