@@ -1,52 +1,109 @@
-# SER Requirement Checker (Java)
+# SER Requirement Quality Checker (Java)
 
-Yazılım gereksinimlerinde **belirsizlik** ve **tutarsızlık** adaylarını tespit eden uygulama. Web arayüzü ve CLI destekler.
+This project analyzes software requirements and highlights:
+- **Ambiguity findings** (possibly unclear statements)
+- **Inconsistency candidates** (possibly conflicting requirement pairs)
 
-**Detaylı proje açıklaması (amaçlar, ne yapıldı, teknikler):** [PROJE.md](PROJE.md)
+It includes both a **Web UI** and a **CLI** workflow.
 
-## Gereksinimler
+Detailed project notes are available in `PROJE.md`.
+
+## Why This Project Exists
+
+Requirements are often written in natural language, which can introduce:
+- vague wording,
+- hidden contradictions,
+- and inconsistent numeric constraints (e.g., different time limits).
+
+This tool provides a first-pass quality check so teams can review risky requirements earlier.
+
+## Core Capabilities
+
+- Analyze plain text requirements (one per line)
+- Upload requirement documents: `CSV`, `TXT`, `DOC`, `DOCX`, `PDF`
+- Show ambiguity and inconsistency tables
+- Export analysis results as CSV in the Web UI
+- Use multilingual interface support (Turkish / English)
+
+## Technical Glossary
+
+- **Requirement**: A statement that describes what the system must/should do.
+- **Ambiguity**: A requirement that can be interpreted in more than one way.
+- **Inconsistency**: Two requirements that cannot both be true at the same time, or that strongly disagree.
+- **Rule-based analysis**: Detection based on explicit patterns/rules (e.g., negation phrases).
+- **Machine Learning (ML)**: In this project, ML is used for semantic similarity by comparing learned vector representations of requirement text.
+- **Word Embedding**: A numeric vector for each word, learned from large text corpora so semantically related words are closer in vector space.
+- **Sentence Embedding (average pooling)**: A sentence vector built by averaging its word vectors; used here as a lightweight semantic representation.
+- **Cosine Similarity**: A value between 0 and 1 showing how close two vectors are by direction; higher means more semantically similar.
+- **Semantic Similarity**: Similarity based on meaning, not just exact keyword overlap.
+- **Similarity Matrix**: Pairwise similarity scores for all requirement pairs (`N x N`), used before conflict rules are applied.
+- **Threshold-based filtering**: Only pairs above configured similarity thresholds are considered for conflict candidate generation.
+- **TF-IDF**: Term Frequency–Inverse Document Frequency, a keyword-frequency method; used here as a non-ML fallback.
+- **Embedding fallback strategy**: If embedding-based similarity is unavailable, the pipeline falls back to TF-IDF similarity.
+- **Fallback**: Backup method used when the preferred method is unavailable.
+- **Thymeleaf**: Server-side template engine used for rendering HTML pages in Spring Boot.
+- **Locale**: Language/region context used for interface translations.
+
+## Tech Stack
+
+- **Java 17**
+- **Spring Boot** (Web + MVC)
+- **Thymeleaf** (UI templating)
+- **OpenCSV** (CSV parsing)
+- **Apache POI** (DOC/DOCX parsing)
+- **Apache PDFBox** (PDF parsing)
+- **Maven** (build/dependency management)
+
+## Prerequisites
 
 - **JDK 17+**
-- **Maven 3.6+** (yoksa: `brew install maven` veya [maven.apache.org](https://maven.apache.org/download.cgi))
+- **Maven 3.6+**
 
-Java’da Python’daki gibi “venv” yok; bağımlılıklar Maven ile proje içinde yönetilir (`pom.xml`). İlk `mvn` çalıştırmasında bağımlılıklar indirilir.
-
-## Derleme
+## Build
 
 ```bash
 cd ser-java
 mvn -q package
 ```
 
-## Web arayüzü
+## Run Web UI
 
 ```bash
 mvn spring-boot:run
 ```
 
-Tarayıcıda: **http://localhost:8080**
+Open: `http://localhost:8080`
 
-## CLI (rapor üretmek)
+## Run CLI
+
+Generate a Markdown report:
 
 ```bash
 mvn -q exec:java -Dexec.mainClass="com.ser.reqcheck.Cli" \
   -Dexec.args="--input data/sample_requirements.csv --format csv --out reports/report.md"
 ```
 
-JSON rapor:
+Generate a JSON report:
 
 ```bash
 mvn -q exec:java -Dexec.mainClass="com.ser.reqcheck.Cli" \
   -Dexec.args="--input data/sample_requirements.csv --format csv --out reports/report.json --out-format json"
 ```
 
-Önce `reports` klasörünü oluştur: `mkdir -p reports`
+Create output directory first if needed:
 
-## Tek jar ile çalıştırma
+```bash
+mkdir -p reports
+```
+
+## Run as JAR
 
 ```bash
 mvn -q package
 java -jar target/reqcheck-1.0.0.jar
 ```
 
-Web arayüzü açılır (port 8080). CLI için yukarıdaki `exec:java` kullanın.
+## Course Context
+
+This project was prepared for the **SER515** course as a practical requirement quality analysis tool combining rule-based and ML-supported techniques.
+It was developed collaboratively by **Sueda Sen** and **Mehmet Aksit**.
