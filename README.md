@@ -103,6 +103,38 @@ mvn -q package
 java -jar target/reqcheck-1.0.0.jar
 ```
 
+## Run with Docker (local)
+
+Build the image:
+
+```bash
+docker build -t ser-requirement-checker .
+```
+
+Run the container:
+
+```bash
+docker run --rm -p 8080:8080 ser-requirement-checker
+```
+
+Open: `http://localhost:8080`
+
+## Deploy on Render (Docker)
+
+This repository includes a `Dockerfile`, so Render can deploy it without Java/Maven runtime configuration.
+
+1. In Render, create a **New Web Service**
+2. Connect your public GitHub repository
+3. Select **Environment/Runtime: Docker**
+4. Keep Root Directory as repository root (default)
+5. Deploy
+
+After deployment, open your `onrender.com` service URL.
+
+Notes:
+- Free instances may spin down on inactivity and can take ~30–60 seconds to wake up.
+- First Docker build can take several minutes.
+
 ## Course Context
 
 This project was prepared for the **SER515** course as a practical requirement quality analysis tool combining rule-based and ML-supported techniques.
