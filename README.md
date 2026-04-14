@@ -98,19 +98,19 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-  A[Input requirements<br/>Text area or uploaded file] --> B[RequirementsLoader<br/>normalize into List&lt;Requirement&gt;]
-  B --> C[Pipeline.analyze]
-  C --> D[AmbiguityAnalyzer<br/>scores + reasons per requirement]
-  C --> E{Word vectors available?}
-  E -->|Yes| F[EmbeddingSimilarity<br/>avg word vectors + cosine]
-  E -->|No| G[TfIdfCosine<br/>TF-IDF + cosine]
-  F --> H[Similarity matrix S]
-  G --> H[Similarity matrix S]
-  H --> I[ConflictFinder<br/>pair filtering + rule checks]
-  D --> J[Ambiguity table<br/>(sorted by score)]
-  I --> K[Conflict candidates table<br/>(sorted by similarity)]
-  J --> L[UI/Report]
-  K --> L[UI/Report]
+  A["Input requirements\n(text area or uploaded file)"] --> B["RequirementsLoader\n(parse + normalize)"]
+  B --> C["Pipeline.analyze"]
+  C --> D["AmbiguityAnalyzer\n(scores + reasons per requirement)"]
+  C --> E{"Word vectors available?"}
+  E -->|Yes| F["EmbeddingSimilarity\n(avg word vectors + cosine)"]
+  E -->|No| G["TfIdfCosine\n(TF-IDF + cosine)"]
+  F --> H["Similarity matrix S"]
+  G --> H["Similarity matrix S"]
+  H --> I["ConflictFinder\n(pair filtering + rule checks)"]
+  D --> J["Ambiguity table\n(sorted by score)"]
+  I --> K["Conflict candidates table\n(sorted by similarity)"]
+  J --> L["UI / Report"]
+  K --> L
 ```
 
 ## How Conflict Candidates Are Generated (Decision View)
@@ -122,7 +122,7 @@ Candidate generation happens in two phases:
 
 ```mermaid
 flowchart LR
-  P[Pair (Ri, Rj)] --> S{Similarity >= MIN_SIM?}
+  P[Pair: Ri vs Rj] --> S{Similarity at least MIN_SIM?}
   S -->|No| X[Ignore pair]
   S -->|Yes| N{Negation differs?}
   N -->|Yes| N1[Flag: negation_conflict]
@@ -131,8 +131,8 @@ flowchart LR
   N2 --> M{Numbers differ?}
   M -->|Yes| M1[Flag: numeric_conflict]
   M -->|No| M2[No numeric flag]
-  M1 --> H{Similarity >= HIGH_SIM?}
-  M2 --> H{Similarity >= HIGH_SIM?}
+  M1 --> H{Similarity at least HIGH_SIM?}
+  M2 --> H{Similarity at least HIGH_SIM?}
   H -->|Yes| H1[Flag: high_similarity_review]
   H -->|No| H2[Done]
 ```
@@ -309,19 +309,30 @@ Open: `http://localhost:8080`
 
 ## Deploy on Render (Docker)
 
-This repository includes a `Dockerfile`, so Render can deploy it without Java/Maven runtime configuration.
+This repository includes a `Dockerfile` and a `render.yaml` blueprint so Render can build and run the app **without** needing Maven installed on Render’s host (the build happens inside Docker).
 
 1. In Render, create a **New Web Service**
 2. Connect your public GitHub repository
 3. Select **Environment/Runtime: Docker**
-4. Keep Root Directory as repository root (default)
-5. Deploy
+4. **Dockerfile Path**: `Dockerfile` (repo root)
+5. Keep **Root Directory** as the repository root (default)
+6. **Build Command**: leave **empty** (Docker build uses the Dockerfile)
+7. **Start Command**: leave **empty** (the image `CMD` starts the JAR with `PORT` from Render)
+8. Deploy
 
 After deployment, open your `onrender.com` service URL.
 
 Notes:
 - Free instances may spin down on inactivity and can take ~30–60 seconds to wake up.
 - First Docker build can take several minutes.
+
+### Troubleshooting: deploy exits with status **127**
+
+Exit **127** almost always means **“command not found”** during the build or start step.
+
+- If **Runtime is Docker** but the dashboard still has a custom **Build Command** (for example `mvn package` or `npm install`), Render may try to run that **on the host** where `mvn` / `node` is not installed → **127**. Clear the Build Command and rely on the Dockerfile.
+- If you use a **native Java** runtime instead of Docker, you must use the **Maven Wrapper**: `./mvnw clean package` (this repo includes `mvnw`), not plain `mvn`, unless you add a buildpack that provides Maven.
+- After pushing changes, trigger **Manual Deploy** so Render picks up the updated `Dockerfile` / `render.yaml`.
 
 ## Course Context
 
