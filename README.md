@@ -1,12 +1,12 @@
 # SER Requirement Quality Checker (Java)
 
-This project analyzes software requirements and highlights:
+This project analyzes natural-language software requirements and highlights:
 - **Ambiguity findings** (possibly unclear statements)
 - **Inconsistency candidates** (possibly conflicting requirement pairs)
 
 It includes both a **Web UI** and a **CLI** workflow.
 
-Detailed project notes are available in `PROJE.md`.
+It is designed as a lightweight “first pass” quality gate: it does not replace human review, but helps teams focus attention on higher-risk requirements early.
 
 ## Why This Project Exists
 
@@ -17,6 +17,29 @@ Requirements are often written in natural language, which can introduce:
 
 This tool provides a first-pass quality check so teams can review risky requirements earlier.
 
+## What You Can Present (Technical Overview)
+
+- **Goal**: ingest requirements (typed or uploaded) → run an analysis pipeline → show ranked ambiguity findings and conflict candidates.
+- **Key idea**: combine **rule-based NLP heuristics** (ambiguity cues, negation/numbers) with **similarity-based pairing** (word-embedding similarity when available, otherwise TF‑IDF cosine).
+- **Outputs**:
+  - **Ambiguity table**: per requirement, a score \([0..1]\) + human-readable reasons.
+  - **Conflict candidates**: requirement pairs worth review (negation mismatch, numeric mismatch, or very high similarity).
+
+## How “Machine Learning” Is Used in This Project (Scope)
+
+This project matches the topic **“Using Machine Learning to Detect Ambiguity and Inconsistency in Software Requirements”** by using ML primarily for **semantic similarity**:
+
+- **ML piece (semantic similarity)**:
+  - When `src/main/resources/wordvectors.txt` is available, the system computes **sentence embeddings** by averaging pre-trained **word vectors** (average pooling), then uses **cosine similarity** to build an \(N \times N\) similarity matrix.
+  - This matrix is used to **prioritize which requirement pairs** are worth checking for conflicts (it is a candidate generator / filter).
+- **Rule-based piece (interpretable flags)**:
+  - Ambiguity is detected via interpretable heuristics (weak modal verbs, vague adjectives, open-ended timing phrases, etc.) and returns human-readable reasons.
+  - Conflicts are flagged with simple, explainable rules (negation mismatch, numeric/time/percent mismatch, and “high similarity review”).
+- **Fallback strategy**:
+  - If embeddings are unavailable, the system falls back to **TF‑IDF cosine** similarity so the pipeline still works end-to-end.
+
+In short: **ML helps the tool understand “meaning similarity”**, and **rules produce explainable quality signals**.
+
 ## Core Capabilities
 
 - Analyze plain text requirements (one per line)
@@ -25,24 +48,185 @@ This tool provides a first-pass quality check so teams can review risky requirem
 - Export analysis results as CSV in the Web UI
 - Use multilingual interface support (Turkish / English)
 
-## Technical Glossary
+## High-Level Architecture
 
-- **Requirement**: A statement that describes what the system must/should do.
-- **Ambiguity**: A requirement that can be interpreted in more than one way.
-- **Inconsistency**: Two requirements that cannot both be true at the same time, or that strongly disagree.
-- **Rule-based analysis**: Detection based on explicit patterns/rules (e.g., negation phrases).
-- **Machine Learning (ML)**: In this project, ML is used for semantic similarity by comparing learned vector representations of requirement text.
-- **Word Embedding**: A numeric vector for each word, learned from large text corpora so semantically related words are closer in vector space.
-- **Sentence Embedding (average pooling)**: A sentence vector built by averaging its word vectors; used here as a lightweight semantic representation.
-- **Cosine Similarity**: A value between 0 and 1 showing how close two vectors are by direction; higher means more semantically similar.
-- **Semantic Similarity**: Similarity based on meaning, not just exact keyword overlap.
-- **Similarity Matrix**: Pairwise similarity scores for all requirement pairs (`N x N`), used before conflict rules are applied.
-- **Threshold-based filtering**: Only pairs above configured similarity thresholds are considered for conflict candidate generation.
-- **TF-IDF**: Term Frequency–Inverse Document Frequency, a keyword-frequency method; used here as a non-ML fallback.
-- **Embedding fallback strategy**: If embedding-based similarity is unavailable, the pipeline falls back to TF-IDF similarity.
-- **Fallback**: Backup method used when the preferred method is unavailable.
-- **Thymeleaf**: Server-side template engine used for rendering HTML pages in Spring Boot.
-- **Locale**: Language/region context used for interface translations.
+```mermaid
+flowchart LR
+  U[User] -->|Text input| WEB[Spring Boot Web UI<br/>Thymeleaf]
+  U -->|File upload: CSV/TXT/DOC/DOCX/PDF| WEB
+  U -->|CLI args| CLI[CLI entrypoint<br/>com.ser.reqcheck.Cli]
+
+  WEB --> LOADER[RequirementsLoader<br/>parses & normalizes]
+  CLI --> LOADER
+
+  LOADER --> PIPE[Pipeline.analyze]
+  PIPE --> AMB[AmbiguityAnalyzer<br/>rule-based cues]
+  PIPE --> SIM[Similarity matrix<br/>EmbeddingSimilarity or TF-IDF]
+  PIPE --> CON[ConflictFinder<br/>candidate generation]
+
+  AMB --> RES[AnalysisResult]
+  CON --> RES
+
+  RES -->|HTML tables| WEB
+  RES -->|Markdown/JSON report| CLI
+```
+
+## Analysis Pipeline (How Results Are Produced)
+
+```mermaid
+sequenceDiagram
+  participant Input as Requirements (List)
+  participant A as AmbiguityAnalyzer
+  participant E as EmbeddingSimilarity
+  participant T as TfIdfCosine
+  participant C as ConflictFinder
+  participant Out as AnalysisResult
+
+  Input->>A: analyze(text) for each requirement
+  Input->>E: similarityMatrix(texts, wordvectors?)
+  alt Word vectors available
+    E-->>C: similarity matrix (cosine over avg word vectors)
+  else Fallback
+    Input->>T: similarityMatrix(texts) (TF-IDF cosine)
+    T-->>C: similarity matrix
+  end
+  C-->>Out: conflict candidates (filtered by similarity thresholds)
+  A-->>Out: ambiguity rows (score + reasons)
+```
+
+## Data Flow (From Input to Tables)
+
+```mermaid
+flowchart TD
+  A[Input requirements<br/>Text area or uploaded file] --> B[RequirementsLoader<br/>normalize into List&lt;Requirement&gt;]
+  B --> C[Pipeline.analyze]
+  C --> D[AmbiguityAnalyzer<br/>scores + reasons per requirement]
+  C --> E{Word vectors available?}
+  E -->|Yes| F[EmbeddingSimilarity<br/>avg word vectors + cosine]
+  E -->|No| G[TfIdfCosine<br/>TF-IDF + cosine]
+  F --> H[Similarity matrix S]
+  G --> H[Similarity matrix S]
+  H --> I[ConflictFinder<br/>pair filtering + rule checks]
+  D --> J[Ambiguity table<br/>(sorted by score)]
+  I --> K[Conflict candidates table<br/>(sorted by similarity)]
+  J --> L[UI/Report]
+  K --> L[UI/Report]
+```
+
+## How Conflict Candidates Are Generated (Decision View)
+
+Candidate generation happens in two phases:
+
+1) **Pair filtering**: only requirement pairs with similarity \(S[i][j] \ge MIN\_SIM\) are evaluated for conflicts.  
+2) **Explainable rules**: each surviving pair may get 0..N flags (negation, numeric mismatch, high similarity review).
+
+```mermaid
+flowchart LR
+  P[Pair (Ri, Rj)] --> S{Similarity >= MIN_SIM?}
+  S -->|No| X[Ignore pair]
+  S -->|Yes| N{Negation differs?}
+  N -->|Yes| N1[Flag: negation_conflict]
+  N -->|No| N2[No negation flag]
+  N1 --> M{Numbers differ?}
+  N2 --> M{Numbers differ?}
+  M -->|Yes| M1[Flag: numeric_conflict]
+  M -->|No| M2[No numeric flag]
+  M1 --> H{Similarity >= HIGH_SIM?}
+  M2 --> H{Similarity >= HIGH_SIM?}
+  H -->|Yes| H1[Flag: high_similarity_review]
+  H -->|No| H2[Done]
+```
+
+## Project Structure
+
+```text
+.
+├── pom.xml
+├── Dockerfile
+├── README.md
+├── data/
+│   └── sample_requirements.csv
+└── src/
+    └── main/
+        ├── java/
+        │   └── com/ser/reqcheck/
+        │       ├── ReqcheckApplication.java      # Spring Boot entrypoint
+        │       ├── WebController.java            # Web UI: upload/text → analyze → render
+        │       ├── Cli.java                      # CLI entrypoint: file → analyze → report
+        │       ├── RequirementsLoader.java       # CSV/TXT/DOC/DOCX/PDF → List<Requirement>
+        │       ├── Pipeline.java                 # orchestrates ambiguity + similarity + conflicts
+        │       ├── AmbiguityAnalyzer.java        # rule-based ambiguity scoring + reasons
+        │       ├── ConflictFinder.java           # rule-based conflict candidate generation
+        │       ├── EmbeddingSimilarity.java      # ML similarity: avg word vectors + cosine
+        │       ├── TfIdfCosine.java              # fallback similarity: TF-IDF + cosine
+        │       ├── WordVectorStore.java          # loads/serves word vectors
+        │       ├── ReportWriter.java             # Markdown/JSON output for CLI
+        │       └── (view models + DTOs)
+        └── resources/
+            ├── templates/index.html              # Thymeleaf UI
+            ├── messages.properties               # i18n (EN)
+            ├── messages_tr.properties            # i18n (TR)
+            └── wordvectors.txt                   # optional: enables embedding similarity
+```
+
+## Key Components (Code Map)
+
+- **`WebController`**: Spring MVC controller that accepts textarea input or a file upload and renders results in `templates/index.html`.
+- **`Cli`**: command-line entrypoint that loads a file, runs the pipeline, and writes a **Markdown** or **JSON** report.
+- **`RequirementsLoader`**: parses inputs into `List<Requirement>`:
+  - **CSV**: requires a `text` column (optional `id` column).
+  - **TXT**: one requirement per non-empty line.
+  - **DOC/DOCX**: one requirement per paragraph.
+  - **PDF**: extracted text split into non-empty lines.
+- **`Pipeline`**: orchestration layer:
+  - ambiguity analysis → similarity matrix → conflict candidate generation.
+  - uses embedding similarity if `src/main/resources/wordvectors.txt` loads; otherwise TF‑IDF fallback.
+- **`AmbiguityAnalyzer`**: rule-based heuristics (weak modal verbs, vague adjectives, open-ended temporal phrases, passive voice hints, pronoun ambiguity).
+- **`EmbeddingSimilarity`**: sentence embedding via **average pooling** of word vectors + cosine similarity.
+- **`TfIdfCosine`**: TF‑IDF vectorization + cosine similarity fallback.
+- **`ConflictFinder`**: candidate generation rules applied only to pairs above a minimum similarity:
+  - **negation conflict**: one requirement has negation cues and the other does not
+  - **numeric conflict**: mismatched numbers/time units/percentages
+  - **high similarity review**: very similar pairs flagged for redundancy/contradiction review
+
+## Similarity Thresholds (Current Defaults)
+
+Defined in `Pipeline`:
+
+- **`MIN_SIM = 0.45`**: pairs below this are ignored (reduces noise).
+- **`HIGH_SIM = 0.65`**: pairs above this also get a “high similarity review” flag.
+
+## Terminology (Quick Reference Table)
+
+| Term | Meaning in this project | Where it appears |
+|---|---|---|
+| Requirement | A single natural-language statement describing what a system must/should do | input lines, `Requirement` |
+| Ambiguity | A single requirement that is potentially unclear / open to multiple interpretations | `AmbiguityAnalyzer`, ambiguity table |
+| Inconsistency (candidate) | A *pair* of requirements that might contradict or strongly disagree | `ConflictFinder`, conflict candidates table |
+| Heuristic (rule-based) | Hand-crafted patterns (e.g., “should”, “fast”, negation cues) used to produce explainable flags | `AmbiguityAnalyzer`, `ConflictFinder` |
+| Word embedding | Pre-trained vector representation of words used to approximate semantic meaning | `wordvectors.txt`, `WordVectorStore` |
+| Sentence embedding (avg pooling) | Sentence vector computed by averaging distinct non-stopword word vectors | `EmbeddingSimilarity` |
+| Cosine similarity | Measures vector-direction similarity; used to rank/filter pairs | `EmbeddingSimilarity`, `TfIdfCosine` |
+| Similarity matrix \(S\) | Pairwise similarity for all requirements (size \(N \times N\)) | `Pipeline`, `ConflictFinder` |
+| Threshold filtering | Only pairs with \(S \ge MIN\_SIM\) are examined for conflicts | `Pipeline` |
+| TF‑IDF | Keyword-based vectorization used as similarity fallback | `TfIdfCosine` |
+| Evidence | Human-readable reason attached to a flag (e.g., “Different numbers…”) | `ConflictCandidate.evidence` |
+
+## What the Output Tables Look Like (Examples)
+
+Ambiguity table (sorted by descending score):
+
+| ID | Score | Text | Reasons |
+|---|---:|---|---|
+| R3 | 0.60 | The system should provide fast performance. | Optionality/weak modal verbs; Vague quality adjectives |
+
+Conflict candidates (sorted by descending similarity):
+
+| Left | Right | Similarity | Kind | Evidence |
+|---|---|---:|---|---|
+| R1 | R2 | 0.78 | numeric_conflict | Different numbers: [2s] vs [5s] |
+| R4 | R5 | 0.72 | negation_conflict | One contains negation, the other does not. |
+| R4 | R5 | 0.72 | high_similarity_review | High textual similarity; review for redundancy/contradiction. |
 
 ## Tech Stack
 
@@ -62,7 +246,6 @@ This tool provides a first-pass quality check so teams can review risky requirem
 ## Build
 
 ```bash
-cd ser-java
 mvn -q package
 ```
 
@@ -95,6 +278,11 @@ Create output directory first if needed:
 ```bash
 mkdir -p reports
 ```
+
+## Input Formats (CLI)
+
+- **CSV**: `--format csv` and a `text` column is required (optional `id` column).
+- **TXT**: `--format txt` and each non-empty line is treated as a requirement.
 
 ## Run as JAR
 
