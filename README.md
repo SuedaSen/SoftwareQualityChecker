@@ -113,6 +113,211 @@ flowchart TD
   K --> L
 ```
 
+## UML Diagrams (PlantUML Renders)
+
+The following diagrams were generated from **PlantUML** and rendered as images for presentation/documentation.
+They complement the Mermaid diagrams above by providing a more “UML-standard” view of the system.
+
+### Use Case Diagram
+
+**Definition (what this diagram is):**  
+A Use Case diagram describes the system from the user’s point of view: **who interacts** with it (actors) and **what goals** they achieve (use cases). It is best for explaining *scope* and *capabilities* without talking about internal code structure.
+
+**What this diagram explains in this project:**  
+- A **Requirements Engineer** can provide requirements either by typing them or uploading a file.
+- The system runs analysis and provides two key outcomes:
+  - **Ambiguity findings** (single‑requirement quality issues)
+  - **Inconsistency candidates** (pairs of requirements worth review)
+- Similarity is computed in two possible ways: **ML embeddings** (when `wordvectors.txt` is available) or **TF‑IDF cosine** fallback.
+- Results can be consumed through:
+  - Web UI tables (plus CSV export)
+  - CLI reports (Markdown/JSON)
+
+**How to read it (quick guide):**  
+- **Actor → Use case** arrows show who initiates an action.
+- `<<include>>` means a use case is always part of another (mandatory sub‑step).
+- `<<extend>>` highlights an optional/conditional behavior (e.g., ML vs fallback similarity).
+
+**Key terms (mini glossary):**  
+- **Actor**: an external role (human/user) interacting with the system.  
+- **Use case**: a user goal/capability (e.g., “Analyze requirements”).  
+- **Ambiguity finding**: a potentially unclear requirement; output includes a score + reasons.  
+- **Inconsistency candidate**: a pair of requirements that might conflict; output includes similarity + evidence.  
+- **TF‑IDF cosine**: keyword‑based similarity method used when embeddings are unavailable.  
+- **Word embeddings**: vector representations of words used to estimate semantic similarity.
+
+![Use Case Diagram](docs/diagrams/use-case.png)
+
+### Component Diagram
+
+**Definition (what this diagram is):**  
+A Component diagram describes the system as **high-level modules** and the **dependencies/communication** between them. It is best for explaining architecture and separation of concerns.
+
+**What this diagram explains in this project:**  
+- There are two “front doors” into the system:
+  - **Web UI** (Spring MVC + Thymeleaf via `WebController`)
+  - **CLI** (via `Cli`)
+- Both entry points reuse the same core pipeline:
+  - `RequirementsLoader` → `Pipeline` → analyzers/similarity → conflict detection
+- ML similarity is **optional** and depends on loading `wordvectors.txt`. If missing, the system still functions via TF‑IDF.
+
+**How to read it (quick guide):**  
+- Boxes represent components/modules.  
+- Arrows represent “uses/calls” relationships (data/requests flow along the arrows).  
+- The database‑shaped node (`wordvectors.txt`) indicates an external resource dependency.
+
+**Key terms (mini glossary):**  
+- **Web UI**: browser-facing interface that renders results as HTML tables.  
+- **CLI**: command-line interface that writes results as Markdown/JSON.  
+- **Pipeline**: orchestration layer that runs the full analysis end-to-end.  
+- **Similarity matrix**: \(N \times N\) pairwise similarity scores for requirements.  
+- **Optional dependency**: a resource that improves results when present but is not required to run.
+
+![Component Diagram](docs/diagrams/component-diagram.png)
+
+### Class Diagram
+
+**Definition (what this diagram is):**  
+A Class diagram describes **static structure** at code level: classes/records, their responsibilities, and dependencies. It is best for answering “which classes exist and how are they connected?”
+
+**What this diagram explains in this project (map of responsibilities):**  
+- **Entry points**:
+  - `WebController`: accepts user input, triggers analysis, and prepares data for the UI.
+  - `Cli`: loads input from disk, runs analysis, and writes reports.
+- **Input parsing**:
+  - `RequirementsLoader`: converts CSV/TXT/DOC/DOCX/PDF into `List<Requirement>`.
+- **Core analysis**:
+  - `Pipeline`: orchestrates ambiguity analysis + similarity + conflict detection.
+  - `AmbiguityAnalyzer`: produces `AmbiguityFinding` (score + reasons).
+  - `EmbeddingSimilarity` + `WordVectorStore`: embedding-based similarity when vectors are available.
+  - `TfIdfCosine`: fallback similarity (works with no vectors).
+  - `ConflictFinder`: generates `ConflictCandidate` outputs with kind/evidence.
+- **Output representation**:
+  - `AnalysisResult`: container for ambiguity rows and conflicts.
+  - `ViewResult` / `View*`: UI-friendly DTOs (getter-based) for Thymeleaf rendering.
+  - `ReportWriter`: produces Markdown/JSON for the CLI.
+
+**How to read it (quick guide):**  
+- Boxes are types (classes/records).  
+- Arrows (`..>`/`-->`) show “uses/depends on”.  
+- Aggregation (`o--`) indicates “contains a collection of”.  
+
+**Key terms (mini glossary):**  
+- **Record**: a Java 16+ data carrier type (immutable fields, auto-generated accessors).  
+- **DTO (View model)**: “presentation-only” type used to render in a template/UI.  
+- **Evidence**: a human-readable string explaining why a conflict candidate was flagged.
+
+![Class Diagram](docs/diagrams/class-diagram.png)
+
+### Domain / Conceptual Model
+
+**Definition (what this diagram is):**  
+A Domain/Conceptual model focuses on the **meaning of the data** the system produces (business concepts), rather than frameworks or controllers. It is best for explaining “what the outputs represent”.
+
+**What this diagram explains in this project:**  
+- A **Requirement** is the atomic unit of analysis (id + text).
+- The pipeline returns exactly one **AnalysisResult** containing:
+  - `AmbiguityRow` items (per requirement: score + reasons)
+  - `ConflictCandidate` items (per pair: similarity + kind + evidence)
+- A `ConflictCandidate` conceptually points to **two requirements** (left/right) and describes *why* they are worth manual review.
+- A `SimilarityMatrix` represents the pairwise similarity space used for filtering/ranking.
+
+**How to read it (quick guide):**  
+- Multiplicities (e.g., `0..*`) show cardinality:
+  - one `AnalysisResult` contains many ambiguity rows / conflict candidates.
+- Labels “left (by id)” and “right (by id)” indicate the candidate references two requirements.
+
+**Key terms (mini glossary):**  
+- **Cardinality (0..*, 1, 2..*)**: how many instances can be linked.  
+- **Similarity score**: a numeric measure \([0..1]\) used to decide whether to evaluate a pair.  
+- **Kind**: the reason category for a candidate (`negation_conflict`, `numeric_conflict`, `high_similarity_review`).  
+- **Reasons vs evidence**:
+  - **Reasons**: explanation list for ambiguity (single requirement).
+  - **Evidence**: explanation string for a conflict candidate (pair).
+
+![Domain / Conceptual Model](docs/diagrams/domain-conceptual-model.png)
+
+### Sequence Diagram (Web Analyze Flow)
+
+**Definition (what this diagram is):**  
+A Sequence diagram shows **time-ordered interactions** between actors/objects. It is best for explaining “what happens when I click Analyze?” at runtime.
+
+**What this diagram explains in this project:**  
+- **Input path selection**:
+  - File upload → format detection → `RequirementsLoader.load(...)`
+  - Text area → line split → `Requirement(R1..Rn)`
+- **End-to-end analysis**:
+  - `Pipeline.analyze(...)` triggers ambiguity analysis (loop per requirement).
+  - Similarity matrix is computed (ML if possible, TF‑IDF fallback otherwise).
+  - `ConflictFinder` generates conflict candidates using similarity thresholds + rule checks.
+- **UI preparation**:
+  - Output is wrapped into view DTOs (`ViewResult`) and rendered back as HTML.
+
+**How to read it (quick guide):**  
+- Vertical dashed lines are **lifelines** (an object over time).  
+- Horizontal arrows are **calls/messages**.  
+- `alt` blocks represent **branching** (file vs text; ML vs fallback).  
+- `loop` blocks represent **repeated steps** (per requirement).
+
+**Key terms (mini glossary):**  
+- **Lifeline**: timeline of an object in the scenario.  
+- **alt / loop**: UML constructs for branching / iteration.  
+- **DTO**: view-specific data objects used for template rendering.  
+- **POST /analyze**: the web endpoint that triggers the pipeline.
+
+![Sequence (Web Analyze Flow)](docs/diagrams/sequence-web-analyze.png)
+
+### Activity Diagram (Pipeline.analyze)
+
+**Definition (what this diagram is):**  
+An Activity diagram shows a **workflow**: the step-by-step control flow of a process, including decisions. It is best for explaining the algorithmic pipeline at a “flowchart” level.
+
+**What this diagram explains in this project:**  
+- The pipeline begins with a list of requirements and produces one `AnalysisResult`.
+- Ambiguity analysis is done **per requirement** (scores + reasons).
+- Similarity is computed in one of two branches:
+  - Embedding similarity (ML) if vectors are loaded
+  - TF‑IDF cosine otherwise
+- Only pairs above a minimum similarity threshold are checked for conflict rules.
+
+**How to read it (quick guide):**  
+- Rounded rectangles are steps/actions.  
+- Diamonds represent decisions (Yes/No).  
+- The flow ends when the result object is returned.
+
+**Key terms (mini glossary):**  
+- **Threshold filtering**: ignoring pairs with low similarity to reduce noise and computation.  
+- **Deterministic**: same input produces same output (no stochastic model inference here).  
+- **Explainable rules**: heuristics that produce human-readable reasons/evidence.
+
+![Activity (Pipeline.analyze)](docs/diagrams/activity-pipeline.png)
+
+### Deployment Diagram
+
+**Definition (what this diagram is):**  
+A Deployment diagram shows the system mapped to **runtime environments** (machines/containers) and the **artifacts** deployed there (e.g., jar files). It is best for explaining “where does it run and what does it need?”
+
+**What this diagram explains in this project:**  
+- The Web UI can run:
+  - locally (developer machine), or
+  - inside Docker (e.g., on Render)
+- The CLI runs locally and produces report files.
+- The same jar artifact (`reqcheck-1.0.0.jar`) is the runnable unit in both cases.
+- The optional ML resource (`wordvectors.txt`) is read at runtime when present.
+
+**How to read it (quick guide):**  
+- Large 3D boxes are nodes/environments (machine/container).  
+- Small “document” icons represent deployed artifacts (jar/resources).  
+- Arrows show runtime communication paths (e.g., browser → HTTP → container).
+
+**Key terms (mini glossary):**  
+- **Artifact**: a deployable build output (here: the runnable jar).  
+- **Node**: a runtime environment (machine, container, hosted service).  
+- **Runtime dependency**: a resource used while the app runs (e.g., vectors file).  
+- **Port 8080**: default HTTP port for the Spring Boot Web UI.
+
+![Deployment](docs/diagrams/deployment.png)
+
 ## How Conflict Candidates Are Generated (Decision View)
 
 Candidate generation happens in two phases:
