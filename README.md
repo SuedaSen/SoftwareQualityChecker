@@ -146,7 +146,8 @@ A Use Case diagram describes the system from the user’s point of view: **who i
 - **TF‑IDF cosine**: keyword‑based similarity method used when embeddings are unavailable.  
 - **Word embeddings**: vector representations of words used to estimate semantic similarity.
 
-![Use Case Diagram](docs/diagrams/use-case.png)
+<img width="1726" height="1379" alt="XLRlR-964Ftkls94fJPr5SZlgFGKXJYuIfNaMY3N-r2fjzW3h32xtEuw73tT_zwtZi4sv1GaBBppvitix9iThgqJnkMBB73IPKp3_e06_3cNXXUi7FsLYqowDKKpJkPiw92UB5CayBYLOch48iXuuiXfCd8wSvJ2Ct5Igs2YjOD7BtSpRRfqFSmv5KDMz2DTF_1imQutjz85mKzqY0z5EjEcCtHhfE4N0ZkNQYaGWiOYcK-D" src="https://github.com/user-attachments/assets/dc533cf3-5284-42c7-9113-48d2c63f9c97" />
+
 
 ### Component Diagram
 
@@ -173,7 +174,7 @@ A Component diagram describes the system as **high-level modules** and the **dep
 - **Similarity matrix**: \(N \times N\) pairwise similarity scores for requirements.  
 - **Optional dependency**: a resource that improves results when present but is not required to run.
 
-![Component Diagram](docs/diagrams/component-diagram.png)
+<img width="2582" height="707" alt="RLNDRkCs4BxpAGPPeDseJRBERzS5YjYoX7eH9sdaJIu-B6sDBC8KgIMfEjwYrpv07x5Fqg5aoqesEXYUuSmtmsz-U6qTDwug97F2IOGaUe07_5e9WmKg1tzKN0gtWJ37nGeD746eYr8hVpOIV6bumIHc3fm68vQvWvHS5qvenJAj7RaCAfThquVhfCAK9wZW1xYUO5wW6woiS8pz24Vq4RBKvYHn6yh3AvXT2LLo2W5plbWj" src="https://github.com/user-attachments/assets/38b51253-e524-4239-9413-6de43763b311" />
 
 ### Class Diagram
 
@@ -207,7 +208,7 @@ A Class diagram describes **static structure** at code level: classes/records, t
 - **DTO (View model)**: “presentation-only” type used to render in a template/UI.  
 - **Evidence**: a human-readable string explaining why a conflict candidate was flagged.
 
-![Class Diagram](docs/diagrams/class-diagram.png)
+<img width="4096" height="1499" alt="image" src="https://github.com/user-attachments/assets/feb13218-fbda-4b1a-9bc0-9d0401b41e81" />
 
 ### Domain / Conceptual Model
 
@@ -235,7 +236,7 @@ A Domain/Conceptual model focuses on the **meaning of the data** the system prod
   - **Reasons**: explanation list for ambiguity (single requirement).
   - **Evidence**: explanation string for a conflict candidate (pair).
 
-![Domain / Conceptual Model](docs/diagrams/domain-conceptual-model.png)
+<img width="1514" height="964" alt="image" src="https://github.com/user-attachments/assets/d2c76f3f-e2cb-4e84-b8f7-851e728fda4c" />
 
 ### Sequence Diagram (Web Analyze Flow)
 
@@ -265,7 +266,8 @@ A Sequence diagram shows **time-ordered interactions** between actors/objects. I
 - **DTO**: view-specific data objects used for template rendering.  
 - **POST /analyze**: the web endpoint that triggers the pipeline.
 
-![Sequence (Web Analyze Flow)](docs/diagrams/sequence-web-analyze.png)
+<img width="2333" height="1804" alt="image" src="https://github.com/user-attachments/assets/9ce750dc-a9b7-455b-a47f-7dfe8b16d95f" />
+
 
 ### Activity Diagram (Pipeline.analyze)
 
