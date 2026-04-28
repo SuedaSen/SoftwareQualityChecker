@@ -1,0 +1,7 @@
+id,text,ambiguous
+R1,The system shall respond to user requests within 2 seconds under normal load.,false
+R2,The system shall respond to user requests within 5 seconds under normal load.,false
+R3,The system should provide fast performance.,true
+R4,Password reset shall not be possible via email.,false
+R5,The system shall allow password reset via email.,false
+

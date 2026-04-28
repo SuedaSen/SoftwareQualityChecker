@@ -253,9 +253,29 @@
         .lang-switcher a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; padding: 0.35rem 0.6rem; border-radius: 6px; }
         .lang-switcher a:hover { color: var(--accent); background: var(--surface-hover); }
         .lang-switcher a.active { color: var(--accent); font-weight: 600; }
+
+        /* Explain link (ChatGPT) */
+        .explain-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-left: 0.5rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(59, 130, 246, 0.06);
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .explain-link:hover { background: rgba(59, 130, 246, 0.12); border-color: var(--accent); }
+        .cell-flex { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+        .cell-flex .cell-text { min-width: 0; white-space: pre-wrap; }
     </style>
 </head>
-<body>
+<body th:attr="data-copied-msg=#{chatgpt.copied},data-chatgpt-url=#{chatgpt.url}">
 <div class="container">
     <nav class="lang-switcher" aria-label="Language">
         <a th:href="@{/(lang='tr')}" th:classappend="${#locale.language == 'tr'} ? 'active'" href="?lang=tr">Türkçe</a>
@@ -354,7 +374,15 @@
                         <td th:text="${r.rid}"></td>
                         <td class="score" th:text="${#numbers.formatDecimal(r.score, 1, 2)}"></td>
                         <td th:text="${r.text}"></td>
-                        <td th:text="${#strings.listJoin(r.reasons, '; ')}"></td>
+                        <td>
+                            <div class="cell-flex">
+                                <div class="cell-text" th:text="${#strings.listJoin(r.reasons, '; ')}"></div>
+                                <a class="explain-link"
+                                   href="#"
+                                   th:attr="data-prompt=${'Explain the following ambiguity reasons in simple terms and suggest a clearer rewrite for the requirement.\n\nRequirement (' + r.rid + '): ' + r.text + '\nReasons: ' + #strings.listJoin(r.reasons, '; ') + '\n\nPlease answer in bullet points.'}"
+                                   th:text="#{btn.explain}">Explain</a>
+                            </div>
+                        </td>
                     </tr>
                     </tbody>
                 </table>
@@ -376,7 +404,15 @@
                         <td th:text="${c.rightId}"></td>
                         <td class="score" th:text="${#numbers.formatDecimal(c.similarity, 1, 2)}"></td>
                         <td th:text="${c.kind}"></td>
-                        <td th:text="${c.evidence}"></td>
+                        <td>
+                            <div class="cell-flex">
+                                <div class="cell-text" th:text="${c.evidence}"></div>
+                                <a class="explain-link"
+                                   href="#"
+                                   th:attr="data-prompt=${'Explain this possible conflict between two requirements. Identify whether it is likely redundancy or a true contradiction and propose an improved combined wording.\n\nLeft (' + c.leftId + ') vs Right (' + c.rightId + ')\nSimilarity: ' + #numbers.formatDecimal(c.similarity, 1, 2) + '\nKind: ' + c.kind + '\nEvidence: ' + c.evidence + '\n\nPlease answer in bullet points.'}"
+                                   th:text="#{btn.explain}">Explain</a>
+                            </div>
+                        </td>
                     </tr>
                     </tbody>
                 </table>
@@ -492,6 +528,35 @@
     }
     var dlBtn = document.getElementById('downloadCsvBtn');
     if (dlBtn) dlBtn.addEventListener('click', downloadCsv);
+
+    function getExplainLabel(key, fallback) {
+        var el = document.querySelector('[data-i18n-' + key + ']');
+        return el ? el.getAttribute('data-i18n-' + key) : (fallback || '');
+    }
+
+    function openChatGptWithPrompt(prompt) {
+        if (!prompt) return;
+        var copiedMsg = document.body.getAttribute('data-copied-msg') || 'Copied prompt. Paste into ChatGPT.';
+        var openUrl = document.body.getAttribute('data-chatgpt-url') || 'https://chat.openai.com/';
+
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(prompt).catch(function() {});
+            }
+        } catch (e) { /* ignore */ }
+
+        window.open(openUrl, '_blank', 'noopener,noreferrer');
+        // Small, non-blocking feedback
+        try { console.log(copiedMsg); } catch (e) { /* ignore */ }
+    }
+
+    document.addEventListener('click', function(e) {
+        var a = e.target && e.target.closest ? e.target.closest('a.explain-link') : null;
+        if (!a) return;
+        e.preventDefault();
+        var prompt = a.getAttribute('data-prompt') || '';
+        openChatGptWithPrompt(prompt);
+    });
 })();
 </script>
 </body>

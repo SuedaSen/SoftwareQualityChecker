@@ -473,6 +473,24 @@ mvn -q exec:java -Dexec.mainClass="com.ser.reqcheck.Cli" \
   -Dexec.args="--input data/sample_requirements.csv --format csv --out reports/report.md"
 ```
 
+Generate a Markdown report **with F1 evaluation** (requires a gold CSV with `text,ambiguous` columns):
+
+```bash
+mvn -q exec:java -Dexec.mainClass="com.ser.reqcheck.Cli" \
+  -Dexec.args="--input data/sample_requirements.csv --format csv --out reports/report.md --gold data/gold_ambiguity.csv --threshold 0.50"
+```
+
+Generate **both English and Turkish** Markdown reports:
+
+```bash
+mvn -q exec:java -Dexec.mainClass="com.ser.reqcheck.Cli" \
+  -Dexec.args="--input data/sample_requirements.csv --format csv --out reports/report.md --out-lang both --gold data/gold_ambiguity.csv --threshold 0.50"
+```
+
+This writes:
+- `reports/report.md` (English)
+- `reports/report_tr.md` (Turkish)
+
 Generate a JSON report:
 
 ```bash
