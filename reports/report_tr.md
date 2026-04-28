@@ -1,5 +1,7 @@
 # Gereksinim Kalite Raporu
 
+> Not: Bu rapor kısaltılmıştır — Belirsizlik satırları: 15/15, tutarsızlık adayları: 131/131. Metinler çok uzunsa kısaltılır.
+
 ## Değerlendirme (Belirsizlik)
 
 - Eşik (threshold; score'u 0/1 etikete çeviren sınır): 0.50
@@ -8,6 +10,12 @@
 - F1 (Precision ve Recall'un harmonik ortalaması): 0.667
 - TP/FP/FN/TN: 1/1/0/3
 - Değerlendirilen satır: 5 (atlanmış: 10)
+
+### Yorum (kısa)
+
+- **Precision** düşükse: çok **yanlış alarm (FP)** üretiyoruz.
+- **Recall** düşükse: gold ambiguous olanları **kaçırıyoruz (FN)**.
+- **F1**, precision ve recall arasında dengeyi özetler; bu koşuda F1=0.667 ve TP/FP/FN/TN=1/1/0/3 olduğundan, sonuç **FP ve/veya FN** kaynaklı olarak bu seviyededir.
 
 ### En iyi eşik (threshold sweep)
 

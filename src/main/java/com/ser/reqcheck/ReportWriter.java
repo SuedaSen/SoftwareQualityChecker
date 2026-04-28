@@ -87,6 +87,27 @@ public final class ReportWriter {
             sb.append("- ").append((lang == Lang.TR) ? "Değerlendirilen satır" : "Evaluated rows").append(": ")
                     .append(eval.evaluatedRows())
                     .append(" (").append((lang == Lang.TR) ? "atlanmış" : "skipped").append(": ").append(eval.skippedRows()).append(")\n\n");
+
+            // Short, high-level interpretation to make reports presentation-friendly.
+            String interpTitle = (lang == Lang.TR) ? "Yorum (kısa)" : "Interpretation (short)";
+            sb.append("### ").append(interpTitle).append("\n\n");
+            if (lang == Lang.TR) {
+                sb.append("- **Precision** düşükse: çok **yanlış alarm (FP)** üretiyoruz.\n");
+                sb.append("- **Recall** düşükse: gold ambiguous olanları **kaçırıyoruz (FN)**.\n");
+                sb.append("- **F1**, precision ve recall arasında dengeyi özetler; bu koşuda F1=")
+                        .append(String.format("%.3f", eval.f1()))
+                        .append(" ve TP/FP/FN/TN=")
+                        .append(eval.tp()).append("/").append(eval.fp()).append("/").append(eval.fn()).append("/").append(eval.tn())
+                        .append(" olduğundan, sonuç **FP ve/veya FN** kaynaklı olarak bu seviyededir.\n\n");
+            } else {
+                sb.append("- If **Precision** is low: we raise many **false alarms (FP)**.\n");
+                sb.append("- If **Recall** is low: we **miss gold positives (FN)**.\n");
+                sb.append("- **F1** summarizes the balance between precision and recall; in this run F1=")
+                        .append(String.format("%.3f", eval.f1()))
+                        .append(" with TP/FP/FN/TN=")
+                        .append(eval.tp()).append("/").append(eval.fp()).append("/").append(eval.fn()).append("/").append(eval.tn())
+                        .append(", so the score is driven by **FP and/or FN** at this threshold.\n\n");
+            }
         }
 
         if (bestEval != null) {

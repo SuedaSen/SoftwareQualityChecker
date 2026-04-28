@@ -11,6 +11,12 @@
 - TP/FP/FN/TN: 3/6/4/7
 - Değerlendirilen satır: 20 (atlanmış: 469)
 
+### Yorum (kısa)
+
+- **Precision** düşükse: çok **yanlış alarm (FP)** üretiyoruz.
+- **Recall** düşükse: gold ambiguous olanları **kaçırıyoruz (FN)**.
+- **F1**, precision ve recall arasında dengeyi özetler; bu koşuda F1=0.375 ve TP/FP/FN/TN=3/6/4/7 olduğundan, sonuç **FP ve/veya FN** kaynaklı olarak bu seviyededir.
+
 ### En iyi eşik (threshold sweep)
 
 - En iyi eşik (F1'i ençoklayan τ*): 0.15

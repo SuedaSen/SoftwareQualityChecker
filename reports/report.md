@@ -1,5 +1,7 @@
 # Requirement Quality Report
 
+> Note: This report is summarized — Ambiguity rows: 15/15, conflict candidates: 131/131. Long texts may be truncated.
+
 ## Evaluation (Ambiguity)
 
 - Threshold (cutoff that turns score into 0/1 label): 0.50
@@ -8,6 +10,12 @@
 - F1 (harmonic mean of Precision and Recall): 0.667
 - TP/FP/FN/TN: 1/1/0/3
 - Evaluated rows: 5 (skipped: 10)
+
+### Interpretation (short)
+
+- If **Precision** is low: we raise many **false alarms (FP)**.
+- If **Recall** is low: we **miss gold positives (FN)**.
+- **F1** summarizes the balance between precision and recall; in this run F1=0.667 with TP/FP/FN/TN=1/1/0/3, so the score is driven by **FP and/or FN** at this threshold.
 
 ### Best threshold (threshold sweep)
 

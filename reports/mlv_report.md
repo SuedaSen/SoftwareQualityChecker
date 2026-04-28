@@ -11,6 +11,12 @@
 - TP/FP/FN/TN: 3/6/4/7
 - Evaluated rows: 20 (skipped: 469)
 
+### Interpretation (short)
+
+- If **Precision** is low: we raise many **false alarms (FP)**.
+- If **Recall** is low: we **miss gold positives (FN)**.
+- **F1** summarizes the balance between precision and recall; in this run F1=0.375 with TP/FP/FN/TN=3/6/4/7, so the score is driven by **FP and/or FN** at this threshold.
+
 ### Best threshold (threshold sweep)
 
 - Best threshold (τ* that maximizes F1): 0.15
