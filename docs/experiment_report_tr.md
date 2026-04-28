@@ -103,6 +103,18 @@ MLV SRS’i bu repoda kullanılabilir hale getirmek için şunları indirdik/haz
 
 ## 4) Metrikler (formüllü)
 
+### 4.0 Neden bu formüller? (neyi ölçüyoruz?)
+
+Bu deneyde belirsizlik tespiti bir **ikili sınıflandırma (binary classification)** problemi olarak ele alınır:
+
+- gold etiket \(y(r)\in\{0,1\}\)
+- tahmin etiketi \(\hat{y}(r)\in\{0,1\}\) (skor + threshold ile üretilir)
+
+Precision/Recall/F1 bu problem için standart metriklerdir çünkü:
+- **Precision**, “fazla işaretleme”yi (false alarm) cezalandırır.
+- **Recall**, belirsiz gereksinimleri kaçırmayı cezalandırır.
+- **F1**, ikisi arasındaki dengeyi harmonik ortalama ile özetler.
+
 ### 4.1 Confusion matrix
 
 Değerlendirilen her gereksinim \(r\) için:
@@ -152,6 +164,24 @@ Yorum: precision ve recall’u dengeleyen harmonik ortalama.
    - TP/FP/FN/TN güncellenir
 6. Precision/Recall/F1 formüllerle hesaplanır.
 7. EN/TR Markdown raporları yazılır.
+
+### 5.1 TP/FP/FN/TN sayımları kodda nasıl üretildi?
+
+Uygulama tanımları birebir şu şekilde uygular:
+
+- Threshold kuralı:
+  - `predAmb = p.score() >= threshold`
+- Gold etiketler CSV’den yüklenir ve **id üzerinden eşleştirilir**.
+- Gold ile eşleşen her satır için sayımlar güncellenir:
+  - `predAmb && goldAmb` → TP++
+  - `predAmb` → FP++
+  - `goldAmb` → FN++
+  - aksi halde → TN++
+
+Kod konumları:
+- Evaluation döngüsü: `src/main/java/com/ser/reqcheck/AmbiguityEvaluator.java`
+- Metrik formülleri: `src/main/java/com/ser/reqcheck/EvaluationResult.java`
+- CLI akışı (args → evaluation → rapor): `src/main/java/com/ser/reqcheck/Cli.java`
 
 ---
 

@@ -12,7 +12,9 @@ public final class Cli {
 
     public static void main(String[] args) {
         if (args.length < 6 || !"--input".equals(args[0]) || !"--format".equals(args[2]) || !"--out".equals(args[4])) {
-            System.err.println("Usage: java ... --input <path> --format csv|txt --out <path> [--out-format md|json] [--out-lang en|tr|both] [--gold <gold.csv> --threshold <0..1>]");
+            System.err.println("Usage: java ... --input <path> --format csv|txt --out <path> " +
+                    "[--out-format md|json] [--out-lang en|tr|both] " +
+                    "[--gold <gold.csv> --threshold <0..1>] [--sweep [--sweep-step <step>]]");
             System.exit(2);
         }
         String inputPath = args[1];
@@ -22,11 +24,23 @@ public final class Cli {
         String outLang = "en";
         String goldPath = null;
         double threshold = 0.5;
-        for (int i = 6; i + 1 < args.length; i += 2) {
-            if ("--out-format".equals(args[i])) outFormat = args[i + 1];
-            if ("--out-lang".equals(args[i])) outLang = args[i + 1];
-            if ("--gold".equals(args[i])) goldPath = args[i + 1];
-            if ("--threshold".equals(args[i])) threshold = Double.parseDouble(args[i + 1]);
+        boolean sweep = false;
+        double sweepStep = 0.05;
+        for (int i = 6; i < args.length; ) {
+            String a = args[i];
+            if ("--sweep".equals(a)) {
+                sweep = true;
+                i += 1;
+                continue;
+            }
+            if (i + 1 >= args.length) break;
+            String v = args[i + 1];
+            if ("--out-format".equals(a)) outFormat = v;
+            else if ("--out-lang".equals(a)) outLang = v;
+            else if ("--gold".equals(a)) goldPath = v;
+            else if ("--threshold".equals(a)) threshold = Double.parseDouble(v);
+            else if ("--sweep-step".equals(a)) sweepStep = Double.parseDouble(v);
+            i += 2;
         }
 
         RequirementsLoader.Format format = "txt".equalsIgnoreCase(formatStr) ? RequirementsLoader.Format.TXT : RequirementsLoader.Format.CSV;
@@ -38,10 +52,15 @@ public final class Cli {
                     .toList();
 
             EvaluationResult eval = null;
+            EvaluationResult bestEval = null;
+            List<EvaluationResult> topSweep = null;
             if (goldPath != null && !goldPath.isBlank()) {
                 List<GoldAmbiguityRow> gold = GoldDatasetLoader.loadAmbiguityGoldCsv(Path.of(goldPath));
-                // Evaluate on the same ordering (row-by-row).
                 eval = AmbiguityEvaluator.evaluate(result.ambiguity(), gold, threshold);
+                if (sweep) {
+                    bestEval = AmbiguityEvaluator.sweepBestF1(result.ambiguity(), gold, sweepStep);
+                    topSweep = AmbiguityEvaluator.sweepTopK(result.ambiguity(), gold, sweepStep, 5);
+                }
             }
 
             Path out = Path.of(outPath);
@@ -53,15 +72,15 @@ public final class Cli {
             }
 
             if ("both".equalsIgnoreCase(outLang)) {
-                String en = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, ReportWriter.Lang.EN);
-                String tr = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, ReportWriter.Lang.TR);
+                String en = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, bestEval, topSweep, ReportWriter.Lang.EN);
+                String tr = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, bestEval, topSweep, ReportWriter.Lang.TR);
                 Files.writeString(out, en);
                 Files.writeString(siblingWithSuffix(out, "_tr"), tr);
             } else if ("tr".equalsIgnoreCase(outLang)) {
-                String tr = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, ReportWriter.Lang.TR);
+                String tr = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, bestEval, topSweep, ReportWriter.Lang.TR);
                 Files.writeString(out, tr);
             } else {
-                String en = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, ReportWriter.Lang.EN);
+                String en = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, bestEval, topSweep, ReportWriter.Lang.EN);
                 Files.writeString(out, en);
             }
         } catch (IOException | CsvException e) {

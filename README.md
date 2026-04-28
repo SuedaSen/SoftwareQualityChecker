@@ -501,11 +501,31 @@ This writes:
 - English: `docs/experiment_report_en.md`
 - Türkçe: `docs/experiment_report_tr.md`
 
+## System Report (EN/TR)
+
+- English: `docs/system_report_en.md`
+- Türkçe: `docs/system_report_tr.md`
+
+## MLV System Report (EN/TR)
+
+- English: `docs/mlv_system_report_en.md`
+- Türkçe: `docs/mlv_system_report_tr.md`
+
 Generate a JSON report:
 
 ```bash
 mvn -q exec:java -Dexec.mainClass="com.ser.reqcheck.Cli" \
   -Dexec.args="--input data/sample_requirements.csv --format csv --out reports/report.json --out-format json"
+```
+
+### Threshold sweep (best F1)
+
+Find the best threshold \(\tau^\*\) that maximizes F1 on a gold file:
+
+```bash
+mvn -q -DskipTests package
+mvn -q exec:java -Dexec.mainClass="com.ser.reqcheck.Cli" \
+  -Dexec.args="--input data/sample_requirements.csv --format csv --out reports/report.md --out-lang both --gold data/gold_ambiguity.csv --threshold 0.50 --sweep --sweep-step 0.05"
 ```
 
 Create output directory first if needed:

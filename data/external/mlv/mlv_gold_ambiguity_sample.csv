@@ -1,0 +1,21 @@
+id,text,ambiguous
+FUN.1,The system shall provide ventilation support for patients who require mechanical ventilation and weigh more than 40 kg (88 lbs).,false
+FUN.2,The system shall provide pressure regulated ventilation controlling the inspiratory pressure.,false
+FUN.5,The Start-up Mode shall be initiated by pushing the power button of the system once the system has been connected to the breathing circuit (without connection to the patient), the air supply, and the power source.,false
+FUN.5.2,The system shall indicate to the user that the initialization process has been completed successfully or failed.,false
+FUN.6,The system shall have a self-test procedure that ensures the system and its accessories are fully functional.,false
+FUN.7,If the self-test fails, the user shall be warned that the system is out-of-service.,false
+FUN.22,In PCV mode it shall be possible to initiate with the push of a single button a lung recruitment procedure (RM).,true
+FUN.23,The system shall provide means to switch from PCV to PSV while PCV ventilation is active.,true
+GUI.2,The transition from Start-up Mode to Ventilation occurs if the GUI finds that the controller is already running in ventilation mode.,true
+GUI.3,The transition from Start-up Mode to Start shall occur once the configurations have been loaded and the controller is not running in ventilation.,false
+GUI.4,The transition from Start to Self Test shall occur if the user wants to test the machine and set the proper parameters for a new patient.,true
+GUI.49.1,The GUI shall be able to start the ventilation as needed.,true
+GUI.57,The user shall be able to enter the PIN to unlock the GUI.,false
+GUI.61,The user shall be able to start ventilation in PCV or PSV by pressing a start button.,false
+GUI.62,The user shall be able to stop ventilation by pressing a stop button if running.,false
+AL.5,High priority alarm signals should be accompanied by information describing possible causes and appropriate actions; operator action may be required to display this information.,true
+AL.8,An alarm system shall be provided with at least one manufacturer configured alarm preset.,false
+CONT.38,When the ventilator is in Start-up or VentilationOff mode the in valve pressure shall be set to close and the out valve shall be open.,false
+CONT.41.2,When inspiratory pause timeout is over the cycle shall proceed immediately to expiration.,true
+CONT.46,The controller cannot return from fail-safe mode to any other mode without a power cycle.,false

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +23,10 @@ import java.util.stream.Collectors;
 
 @Controller
 public class WebController {
+
+    private static final SimpleRateLimiter EXPLAIN_LIMITER = new SimpleRateLimiter(
+            parseIntEnv("EXPLAIN_RPM", 30)
+    );
 
     @GetMapping("/")
     public String index(Model model) {
@@ -107,13 +112,28 @@ public class WebController {
 
     @PostMapping("/explain")
     @ResponseBody
-    public Map<String, Object> explain(@RequestBody Map<String, Object> body) {
+    public Map<String, Object> explain(@RequestBody Map<String, Object> body, HttpServletRequest request) {
         String prompt = body == null ? null : (String) body.get("prompt");
         if (prompt == null || prompt.isBlank()) {
             return Map.of("ok", false, "error", "Missing prompt.");
         }
         if (prompt.length() > 12000) {
             return Map.of("ok", false, "error", "Prompt too long.");
+        }
+
+        // Optional token guard (recommended for public deployments)
+        String requiredToken = System.getenv("EXPLAIN_TOKEN");
+        if (requiredToken != null && !requiredToken.isBlank()) {
+            String provided = request.getHeader("X-Explain-Token");
+            if (provided == null || !provided.equals(requiredToken)) {
+                return Map.of("ok", false, "error", "Unauthorized: missing/invalid access code.");
+            }
+        }
+
+        // Basic IP rate limiting (best-effort; single-instance)
+        String clientKey = "ip:" + clientIp(request);
+        if (!EXPLAIN_LIMITER.allow(clientKey)) {
+            return Map.of("ok", false, "error", "Rate limit exceeded. Try again in a minute.");
         }
 
         String apiKey = System.getenv("OPENAI_API_KEY");
@@ -135,5 +155,27 @@ public class WebController {
         } catch (Exception e) {
             return Map.of("ok", false, "error", e.getMessage());
         }
+    }
+
+    private static int parseIntEnv(String name, int def) {
+        try {
+            String v = System.getenv(name);
+            if (v == null || v.isBlank()) return def;
+            return Integer.parseInt(v.trim());
+        } catch (Exception e) {
+            return def;
+        }
+    }
+
+    private static String clientIp(HttpServletRequest request) {
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            // first IP in the chain
+            int comma = xff.indexOf(',');
+            return (comma >= 0 ? xff.substring(0, comma) : xff).trim();
+        }
+        String xrip = request.getHeader("X-Real-IP");
+        if (xrip != null && !xrip.isBlank()) return xrip.trim();
+        return request.getRemoteAddr();
     }
 }

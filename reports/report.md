@@ -9,6 +9,24 @@
 - TP/FP/FN/TN: 1/1/0/3
 - Evaluated rows: 5 (skipped: 10)
 
+### Best threshold (threshold sweep)
+
+- Best threshold: 0.60
+- Precision: 1.000
+- Recall: 1.000
+- F1: 1.000
+- TP/FP/FN/TN: 1/0/0/4
+
+### Top 5 thresholds (by F1)
+
+| Threshold | Precision | Recall | F1 | TP/FP/FN/TN |
+|---:|---:|---:|---:|---|
+| 0.60 | 1.000 | 1.000 | 1.000 | 1/0/0/4 |
+| 0.05 | 0.500 | 1.000 | 0.667 | 1/1/0/3 |
+| 0.10 | 0.500 | 1.000 | 0.667 | 1/1/0/3 |
+| 0.15 | 0.500 | 1.000 | 0.667 | 1/1/0/3 |
+| 0.20 | 0.500 | 1.000 | 0.667 | 1/1/0/3 |
+
 ## Ambiguity findings
 
 | ID | Score | Text | Reasons |

@@ -17,6 +17,14 @@ public final class ReportWriter {
     }
 
     public static String toMarkdownLocalized(List<AmbiguityRow> ambiguity, List<ConflictCandidate> conflicts, EvaluationResult eval, Lang lang) {
+        return toMarkdownLocalized(ambiguity, conflicts, eval, null, lang);
+    }
+
+    public static String toMarkdownLocalized(List<AmbiguityRow> ambiguity, List<ConflictCandidate> conflicts, EvaluationResult eval, EvaluationResult bestEval, Lang lang) {
+        return toMarkdownLocalized(ambiguity, conflicts, eval, bestEval, null, lang);
+    }
+
+    public static String toMarkdownLocalized(List<AmbiguityRow> ambiguity, List<ConflictCandidate> conflicts, EvaluationResult eval, EvaluationResult bestEval, List<EvaluationResult> topSweep, Lang lang) {
         StringBuilder sb = new StringBuilder();
 
         String title = (lang == Lang.TR) ? "Gereksinim Kalite Raporu" : "Requirement Quality Report";
@@ -50,6 +58,37 @@ public final class ReportWriter {
             sb.append("- ").append((lang == Lang.TR) ? "Değerlendirilen satır" : "Evaluated rows").append(": ")
                     .append(eval.evaluatedRows())
                     .append(" (").append((lang == Lang.TR) ? "atlanmış" : "skipped").append(": ").append(eval.skippedRows()).append(")\n\n");
+        }
+
+        if (bestEval != null) {
+            String bestTitle = (lang == Lang.TR) ? "En iyi eşik (threshold sweep)" : "Best threshold (threshold sweep)";
+            sb.append("### ").append(bestTitle).append("\n\n");
+            sb.append("- ").append((lang == Lang.TR) ? "En iyi eşik" : "Best threshold").append(": ").append(String.format("%.2f", bestEval.threshold())).append("\n");
+            sb.append("- Precision: ").append(String.format("%.3f", bestEval.precision())).append("\n");
+            sb.append("- Recall: ").append(String.format("%.3f", bestEval.recall())).append("\n");
+            sb.append("- F1: ").append(String.format("%.3f", bestEval.f1())).append("\n");
+            sb.append("- TP/FP/FN/TN: ").append(bestEval.tp()).append("/")
+                    .append(bestEval.fp()).append("/")
+                    .append(bestEval.fn()).append("/")
+                    .append(bestEval.tn()).append("\n\n");
+        }
+
+        if (topSweep != null && !topSweep.isEmpty()) {
+            String topTitle = (lang == Lang.TR) ? "Top 5 eşik (F1'e göre)" : "Top 5 thresholds (by F1)";
+            sb.append("### ").append(topTitle).append("\n\n");
+            sb.append("| ").append((lang == Lang.TR) ? "Eşik" : "Threshold").append(" | Precision | Recall | F1 | TP/FP/FN/TN |\n");
+            sb.append("|---:|---:|---:|---:|---|\n");
+            int limit = Math.min(5, topSweep.size());
+            for (int i = 0; i < limit; i++) {
+                EvaluationResult r = topSweep.get(i);
+                sb.append("| ").append(String.format("%.2f", r.threshold()))
+                        .append(" | ").append(String.format("%.3f", r.precision()))
+                        .append(" | ").append(String.format("%.3f", r.recall()))
+                        .append(" | ").append(String.format("%.3f", r.f1()))
+                        .append(" | ").append(r.tp()).append("/").append(r.fp()).append("/").append(r.fn()).append("/").append(r.tn())
+                        .append(" |\n");
+            }
+            sb.append("\n");
         }
 
         sb.append("## ").append(ambTitle).append("\n\n");

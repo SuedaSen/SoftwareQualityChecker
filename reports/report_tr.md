@@ -9,6 +9,24 @@
 - TP/FP/FN/TN: 1/1/0/3
 - Değerlendirilen satır: 5 (atlanmış: 10)
 
+### En iyi eşik (threshold sweep)
+
+- En iyi eşik: 0.60
+- Precision: 1.000
+- Recall: 1.000
+- F1: 1.000
+- TP/FP/FN/TN: 1/0/0/4
+
+### Top 5 eşik (F1'e göre)
+
+| Eşik | Precision | Recall | F1 | TP/FP/FN/TN |
+|---:|---:|---:|---:|---|
+| 0.60 | 1.000 | 1.000 | 1.000 | 1/0/0/4 |
+| 0.05 | 0.500 | 1.000 | 0.667 | 1/1/0/3 |
+| 0.10 | 0.500 | 1.000 | 0.667 | 1/1/0/3 |
+| 0.15 | 0.500 | 1.000 | 0.667 | 1/1/0/3 |
+| 0.20 | 0.500 | 1.000 | 0.667 | 1/1/0/3 |
+
 ## Belirsizlik bulguları
 
 | ID | Skor | Metin | Gerekçe |

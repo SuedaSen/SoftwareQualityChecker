@@ -103,6 +103,18 @@ Important: This extracted file contains `id,text` only. To compute F1 on MLV, yo
 
 ## 4) Metrics (with formulas)
 
+### 4.0 Why these formulas (what we are measuring)
+
+In this experiment, ambiguity detection is treated as a **binary classification** problem:
+
+- gold label \(y(r)\in\{0,1\}\)
+- predicted label \(\hat{y}(r)\in\{0,1\}\) derived from a score threshold
+
+Precision/Recall/F1 are the standard metrics for this setting because:
+- **Precision** penalizes “over-flagging” (too many false alarms).
+- **Recall** penalizes “missing” ambiguous requirements.
+- **F1** is the harmonic mean that summarizes the trade-off between both.
+
 ### 4.1 Confusion matrix
 
 For each evaluated requirement \(r\):
@@ -152,6 +164,24 @@ Interpretation: harmonic mean that balances precision and recall.
    - update TP/FP/FN/TN
 6. Compute Precision, Recall, F1 using the formulas above.
 7. Write **bilingual** Markdown reports (EN/TR).
+
+### 5.1 How counts were produced in code (TP/FP/FN/TN)
+
+The implementation follows the definitions above exactly:
+
+- The thresholding rule is implemented as:
+  - `predAmb = p.score() >= threshold`
+- Gold labels are loaded from CSV and matched **by id**.
+- For each predicted row that has a matching gold label, counts are updated:
+  - if `predAmb && goldAmb` → TP++
+  - else if `predAmb` → FP++
+  - else if `goldAmb` → FN++
+  - else → TN++
+
+Code locations:
+- Evaluation loop: `src/main/java/com/ser/reqcheck/AmbiguityEvaluator.java`
+- Metric formulas: `src/main/java/com/ser/reqcheck/EvaluationResult.java`
+- CLI wiring (args → evaluation → report): `src/main/java/com/ser/reqcheck/Cli.java`
 
 ---
 

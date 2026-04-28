@@ -340,6 +340,34 @@
             flex-wrap: wrap;
             margin-bottom: 0.75rem;
         }
+        .token-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 0.4rem 0 0.25rem;
+        }
+        .token-row label {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .token-row input {
+            flex: 1 1 260px;
+            min-width: 220px;
+            padding: 0.55rem 0.7rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: inherit;
+        }
+        .token-help {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin: 0 0 0.5rem;
+        }
         .modal-hint {
             margin: 0.25rem 0 0.75rem;
             color: var(--text-muted);
@@ -384,7 +412,7 @@
         }
     </style>
 </head>
-<body th:attr="data-copied-msg=#{chatgpt.copied},data-chatgpt-url=#{chatgpt.url},data-modal-title=#{chatgpt.modal.title},data-modal-copy=#{chatgpt.modal.copy},data-modal-open=#{chatgpt.modal.open},data-modal-close=#{chatgpt.modal.close},data-modal-hint=#{chatgpt.modal.hint},data-modal-auto=#{chatgpt.modal.auto},data-modal-resp-hint=#{chatgpt.modal.resp_hint},data-modal-generating=#{chatgpt.modal.generating},data-modal-generating-body=#{chatgpt.modal.generating_body},data-modal-copy-failed=#{chatgpt.modal.copy_failed},data-modal-auto-failed=#{chatgpt.modal.auto_failed}">
+<body th:attr="data-copied-msg=#{chatgpt.copied},data-chatgpt-url=#{chatgpt.url},data-modal-title=#{chatgpt.modal.title},data-modal-copy=#{chatgpt.modal.copy},data-modal-open=#{chatgpt.modal.open},data-modal-close=#{chatgpt.modal.close},data-modal-hint=#{chatgpt.modal.hint},data-modal-auto=#{chatgpt.modal.auto},data-modal-resp-hint=#{chatgpt.modal.resp_hint},data-modal-generating=#{chatgpt.modal.generating},data-modal-generating-body=#{chatgpt.modal.generating_body},data-modal-copy-failed=#{chatgpt.modal.copy_failed},data-modal-auto-failed=#{chatgpt.modal.auto_failed},data-modal-token-label=#{chatgpt.modal.token_label},data-modal-token-placeholder=#{chatgpt.modal.token_placeholder},data-modal-token-help=#{chatgpt.modal.token_help}">
 <div class="container">
     <nav class="lang-switcher" aria-label="Language">
         <a th:href="@{/(lang='tr')}" th:classappend="${#locale.language == 'tr'} ? 'active'" href="?lang=tr">Türkçe</a>
@@ -575,6 +603,11 @@
             <div class="modal-hint" id="chatgptHint">
                 We will copy the prompt. After ChatGPT opens, paste (Ctrl/Cmd+V) and press Enter.
             </div>
+            <div class="token-row">
+                <label for="chatgptTokenInput" id="chatgptTokenLabel">Access code (optional)</label>
+                <input id="chatgptTokenInput" type="password" autocomplete="off" placeholder="Access code (only needed if enabled)"/>
+            </div>
+            <div class="token-help" id="chatgptTokenHelp">If the server requires an access code, enter it once and we will remember it in this browser.</div>
             <textarea class="prompt-box" id="chatgptPromptBox" readonly></textarea>
             <div class="divider"></div>
             <div class="modal-hint" id="chatgptRespHint">Automatic output will appear below (requires OPENAI_API_KEY).</div>
@@ -676,6 +709,9 @@
     var openBtn = document.getElementById('chatgptOpenBtn');
     var autoBtn = document.getElementById('chatgptAutoBtn');
     var responseBox = document.getElementById('chatgptResponseBox');
+    var tokenInput = document.getElementById('chatgptTokenInput');
+    var tokenLabel = document.getElementById('chatgptTokenLabel');
+    var tokenHelp = document.getElementById('chatgptTokenHelp');
     var lastPrompt = '';
 
     function setModalLabels() {
@@ -688,6 +724,9 @@
         var respHintEl = document.getElementById('chatgptRespHint');
         if (respHintEl) respHintEl.textContent = document.body.getAttribute('data-modal-resp-hint') || 'Automatic output will appear below (requires OPENAI_API_KEY).';
         if (autoBtn) autoBtn.textContent = document.body.getAttribute('data-modal-auto') || 'Auto-explain (EN+TR)';
+        if (tokenLabel) tokenLabel.textContent = document.body.getAttribute('data-modal-token-label') || 'Access code (optional)';
+        if (tokenHelp) tokenHelp.textContent = document.body.getAttribute('data-modal-token-help') || 'If the server requires an access code, enter it once and we will remember it in this browser.';
+        if (tokenInput) tokenInput.placeholder = document.body.getAttribute('data-modal-token-placeholder') || 'Access code (only needed if enabled)';
     }
 
     function openModal(prompt) {
@@ -696,6 +735,9 @@
         lastPrompt = prompt || '';
         promptBox.value = lastPrompt;
         if (responseBox) responseBox.textContent = '';
+        if (tokenInput) {
+            tokenInput.value = localStorage.getItem('explainToken') || '';
+        }
         modal.classList.add('open');
         modal.setAttribute('aria-hidden', 'false');
         setTimeout(function() { promptBox.focus(); promptBox.select(); }, 0);
@@ -789,9 +831,17 @@
         if (!responseBox) return;
         setAutoBusy(true);
         responseBox.textContent = document.body.getAttribute('data-modal-generating-body') || 'Generating explanation…';
+        var token = (tokenInput && tokenInput.value) ? tokenInput.value.trim() : '';
+        if (tokenInput) {
+            if (token) localStorage.setItem('explainToken', token);
+            else localStorage.removeItem('explainToken');
+        }
         fetch('/explain', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: Object.assign(
+                { 'Content-Type': 'application/json' },
+                token ? { 'X-Explain-Token': token } : {}
+            ),
             body: JSON.stringify({ prompt: lastPrompt })
         })
         .then(function(r) { return r.json(); })
