@@ -496,6 +496,11 @@ This writes:
 - English: `docs/datasets_and_evaluation_en.md`
 - Türkçe: `docs/datasets_and_evaluation_tr.md`
 
+## Experiment Report (EN/TR)
+
+- English: `docs/experiment_report_en.md`
+- Türkçe: `docs/experiment_report_tr.md`
+
 Generate a JSON report:
 
 ```bash

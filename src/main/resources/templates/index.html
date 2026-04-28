@@ -294,9 +294,74 @@
             pointer-events: none;
         }
         .toast.show { opacity: 1; transform: translateY(0); }
+
+        /* Modal for ChatGPT prompt */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-backdrop.open { display: flex; }
+        .modal {
+            width: min(860px, 100%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-title { font-weight: 700; letter-spacing: -0.01em; }
+        .modal-close {
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            border-radius: 10px;
+            padding: 0.35rem 0.6rem;
+            cursor: pointer;
+        }
+        .modal-close:hover { background: var(--surface-hover); }
+        .modal-body { padding: 1rem 1.25rem 1.25rem; }
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.75rem;
+        }
+        .modal-actions .btn-secondary {
+            background: var(--surface-hover);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .modal-actions .btn-secondary:hover { background: var(--border); }
+        .prompt-box {
+            width: 100%;
+            min-height: 240px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg);
+            color: var(--text);
+            padding: 0.9rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
-<body th:attr="data-copied-msg=#{chatgpt.copied},data-chatgpt-url=#{chatgpt.url}">
+<body th:attr="data-copied-msg=#{chatgpt.copied},data-chatgpt-url=#{chatgpt.url},data-modal-title=#{chatgpt.modal.title},data-modal-copy=#{chatgpt.modal.copy},data-modal-open=#{chatgpt.modal.open},data-modal-close=#{chatgpt.modal.close}">
 <div class="container">
     <nav class="lang-switcher" aria-label="Language">
         <a th:href="@{/(lang='tr')}" th:classappend="${#locale.language == 'tr'} ? 'active'" href="?lang=tr">Türkçe</a>
@@ -400,7 +465,7 @@
                                 <div class="cell-text" th:text="${#strings.listJoin(r.reasons, '; ')}"></div>
                                 <a class="explain-link"
                                    href="#"
-                                   th:attr="data-prompt=${'Explain the following ambiguity reasons in simple terms and suggest a clearer rewrite for the requirement.\n\nRequirement (' + r.rid + '): ' + r.text + '\nReasons: ' + #strings.listJoin(r.reasons, '; ') + '\n\nPlease answer in bullet points.'}"
+                                   th:attr="data-prompt=${'Please interpret the following analysis output and explain what it means.\n\nRequirement (' + r.rid + '): ' + r.text + '\nReasons: ' + #strings.listJoin(r.reasons, '; ') + '\n\nOutput format:\n1) English explanation (bullet points)\n2) Turkish explanation (madde madde)\n3) Suggested clearer rewrite(s) of the requirement (EN and TR)\n'}"
                                    th:text="#{btn.explain}">Explain</a>
                             </div>
                         </td>
@@ -430,7 +495,7 @@
                                 <div class="cell-text" th:text="${c.evidence}"></div>
                                 <a class="explain-link"
                                    href="#"
-                                   th:attr="data-prompt=${'Explain this possible conflict between two requirements. Identify whether it is likely redundancy or a true contradiction and propose an improved combined wording.\n\nLeft (' + c.leftId + '): ' + c.leftText + '\nRight (' + c.rightId + '): ' + c.rightText + '\nSimilarity: ' + #numbers.formatDecimal(c.similarity, 1, 2) + '\nKind: ' + c.kind + '\nEvidence: ' + c.evidence + '\n\nPlease answer in bullet points.'}"
+                                   th:attr="data-prompt=${'Please interpret the following conflict-candidate output. Explain whether it is likely redundancy or a real contradiction and what a reviewer should check.\n\nLeft (' + c.leftId + '): ' + c.leftText + '\nRight (' + c.rightId + '): ' + c.rightText + '\nSimilarity: ' + #numbers.formatDecimal(c.similarity, 1, 2) + '\nKind: ' + c.kind + '\nEvidence: ' + c.evidence + '\n\nOutput format:\n1) English explanation (bullet points)\n2) Turkish explanation (madde madde)\n3) Suggested improved wording or resolution (EN and TR)\n'}"
                                    th:text="#{btn.explain}">Explain</a>
                             </div>
                         </td>
@@ -471,6 +536,22 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="modal-backdrop" id="chatgptModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="chatgptModalTitle">
+        <div class="modal-header">
+            <div class="modal-title" id="chatgptModalTitle">ChatGPT prompt</div>
+            <button class="modal-close" type="button" id="chatgptModalClose">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-actions">
+                <button type="button" id="chatgptCopyBtn" class="btn-secondary">Copy prompt</button>
+                <button type="button" id="chatgptOpenBtn">Open ChatGPT</button>
+            </div>
+            <textarea class="prompt-box" id="chatgptPromptBox" readonly></textarea>
+        </div>
+    </div>
+</div>
 
 <script>
 (function() {
@@ -557,19 +638,59 @@
         return el ? el.getAttribute('data-i18n-' + key) : (fallback || '');
     }
 
-    function openChatGptWithPrompt(prompt) {
-        if (!prompt) return;
-        var copiedMsg = document.body.getAttribute('data-copied-msg') || 'Copied prompt. Paste into ChatGPT.';
-        var openUrl = document.body.getAttribute('data-chatgpt-url') || 'https://chat.openai.com/';
+    var modal = document.getElementById('chatgptModal');
+    var modalTitle = document.getElementById('chatgptModalTitle');
+    var modalClose = document.getElementById('chatgptModalClose');
+    var promptBox = document.getElementById('chatgptPromptBox');
+    var copyBtn = document.getElementById('chatgptCopyBtn');
+    var openBtn = document.getElementById('chatgptOpenBtn');
+    var lastPrompt = '';
 
-        try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(prompt).catch(function() {});
+    function setModalLabels() {
+        modalTitle.textContent = document.body.getAttribute('data-modal-title') || 'ChatGPT prompt';
+        copyBtn.textContent = document.body.getAttribute('data-modal-copy') || 'Copy prompt';
+        openBtn.textContent = document.body.getAttribute('data-modal-open') || 'Open ChatGPT';
+        modalClose.textContent = document.body.getAttribute('data-modal-close') || 'Close';
+    }
+
+    function openModal(prompt) {
+        if (!modal || !promptBox) return;
+        setModalLabels();
+        lastPrompt = prompt || '';
+        promptBox.value = lastPrompt;
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        setTimeout(function() { promptBox.focus(); promptBox.select(); }, 0);
+    }
+
+    function closeModal() {
+        if (!modal) return;
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function copyText(text) {
+        if (!text) return Promise.reject(new Error('empty'));
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text);
+        }
+        // Fallback for non-secure contexts: select textarea and execCommand
+        return new Promise(function(resolve, reject) {
+            try {
+                promptBox.value = text;
+                promptBox.focus();
+                promptBox.select();
+                var ok = document.execCommand('copy');
+                ok ? resolve() : reject(new Error('copy_failed'));
+            } catch (e) {
+                reject(e);
             }
-        } catch (e) { /* ignore */ }
+        });
+    }
 
+    function openChatGpt() {
+        var openUrl = document.body.getAttribute('data-chatgpt-url') || 'https://chatgpt.com/';
         window.open(openUrl, '_blank', 'noopener,noreferrer');
-        showToast(copiedMsg);
     }
 
     var toastTimer = null;
@@ -589,7 +710,33 @@
         if (!a) return;
         e.preventDefault();
         var prompt = a.getAttribute('data-prompt') || '';
-        openChatGptWithPrompt(prompt);
+        openModal(prompt);
+    });
+
+    if (modalClose) modalClose.addEventListener('click', closeModal);
+    if (modal) modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal && modal.classList.contains('open')) closeModal();
+    });
+    if (copyBtn) copyBtn.addEventListener('click', function() {
+        var copiedMsg = document.body.getAttribute('data-copied-msg') || 'Copied prompt. Paste into ChatGPT.';
+        copyText(lastPrompt).then(function() {
+            showToast(copiedMsg);
+        }).catch(function() {
+            showToast('Copy failed. Select the text and copy manually.');
+        });
+    });
+    if (openBtn) openBtn.addEventListener('click', function() {
+        // Try copy first, then open ChatGPT (better UX)
+        var copiedMsg = document.body.getAttribute('data-copied-msg') || 'Copied prompt. Paste into ChatGPT.';
+        copyText(lastPrompt).then(function() {
+            showToast(copiedMsg);
+            openChatGpt();
+        }).catch(function() {
+            openChatGpt();
+        });
     });
 })();
 </script>

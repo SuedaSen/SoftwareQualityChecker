@@ -101,6 +101,17 @@ mvn -q exec:java -Dexec.mainClass="com.ser.reqcheck.Cli" \
   - `gold_ambiguity.csv` (etiketli) üret (yazar artifact’i varsa oradan; yoksa alt-küme manuel),
   - `--gold` ile F1 raporu üret
 
+#### Bu repoda indirdiğimiz ve hazırladığımız şey
+
+- MLV SRS (v1.5) indirildi:
+  - `data/external/mlv/Mechanical_Lung_Ventilator_1_5.pdf`
+  - Kaynak link: `https://raw.githubusercontent.com/foselab/abz2024_casestudy_MLV/main/Mechanical_Lung_Ventilator%201_5.pdf`
+- Requirement id/text içeren “best-effort” CSV çıkarıldı:
+  - `data/external/mlv/mlv_requirements_v1_5.csv`
+  - Extractor: `src/main/java/com/ser/reqcheck/MlvRequirementsExtractor.java`
+
+Not: Bu CSV **gold etiketli** değil; F1 için ayrıca `ambiguous` kolonu eklenmeli.
+
 ### Makale C — Brown (framework): Machine Learning Framework for Identifying Inconsistency in SRD
 
 - **Makale PDF**: `https://www.micsymposium.org/mics2019/wp-content/uploads/2019/05/Framework__for_finding_inconsistency.pdf`

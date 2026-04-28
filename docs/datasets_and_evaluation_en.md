@@ -101,6 +101,17 @@ Outputs:
   - Provide a labeled `gold_ambiguity.csv` (either from authors’ artifacts, or manually label a subset),
   - Run our CLI with `--gold` to compute F1
 
+#### What we actually downloaded and prepared (in this repo)
+
+- Downloaded MLV SRS (version 1.5) into:
+  - `data/external/mlv/Mechanical_Lung_Ventilator_1_5.pdf`
+  - Source link: `https://raw.githubusercontent.com/foselab/abz2024_casestudy_MLV/main/Mechanical_Lung_Ventilator%201_5.pdf`
+- Extracted a best-effort CSV of requirements ids/text into:
+  - `data/external/mlv/mlv_requirements_v1_5.csv`
+  - Extractor: `src/main/java/com/ser/reqcheck/MlvRequirementsExtractor.java`
+
+Note: The extracted CSV is **not a labeled gold set**; you still need to add an `ambiguous` column to compute F1.
+
 ### Paper C — Brown (framework): Machine Learning Framework for Identifying Inconsistency in SRD
 
 - **Paper PDF**: `https://www.micsymposium.org/mics2019/wp-content/uploads/2019/05/Framework__for_finding_inconsistency.pdf`
