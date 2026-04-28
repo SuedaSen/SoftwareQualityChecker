@@ -3,7 +3,9 @@ package com.ser.reqcheck;
 import com.opencsv.exceptions.CsvException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,7 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
@@ -99,5 +103,37 @@ public class WebController {
         model.addAttribute("requirementCount", reqs.size());
         model.addAttribute("mlEnabled", Pipeline.isMlSimilarityEnabled());
         return "index";
+    }
+
+    @PostMapping("/explain")
+    @ResponseBody
+    public Map<String, Object> explain(@RequestBody Map<String, Object> body) {
+        String prompt = body == null ? null : (String) body.get("prompt");
+        if (prompt == null || prompt.isBlank()) {
+            return Map.of("ok", false, "error", "Missing prompt.");
+        }
+        if (prompt.length() > 12000) {
+            return Map.of("ok", false, "error", "Prompt too long.");
+        }
+
+        String apiKey = System.getenv("OPENAI_API_KEY");
+        if (apiKey == null || apiKey.isBlank()) {
+            return Map.of(
+                    "ok", false,
+                    "error", "OPENAI_API_KEY is not set. Configure it to enable automatic explanations."
+            );
+        }
+        String model = System.getenv("OPENAI_MODEL"); // optional override
+
+        try {
+            OpenAiExplainClient client = new OpenAiExplainClient(apiKey, model);
+            String response = client.explain(prompt);
+            Map<String, Object> out = new LinkedHashMap<>();
+            out.put("ok", true);
+            out.put("response", response);
+            return out;
+        } catch (Exception e) {
+            return Map.of("ok", false, "error", e.getMessage());
+        }
     }
 }

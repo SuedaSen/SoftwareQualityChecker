@@ -340,12 +340,22 @@
             flex-wrap: wrap;
             margin-bottom: 0.75rem;
         }
+        .modal-hint {
+            margin: 0.25rem 0 0.75rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
         .modal-actions .btn-secondary {
             background: var(--surface-hover);
             border: 1px solid var(--border);
             color: var(--text);
         }
         .modal-actions .btn-secondary:hover { background: var(--border); }
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0.85rem 0;
+        }
         .prompt-box {
             width: 100%;
             min-height: 240px;
@@ -359,9 +369,22 @@
             line-height: 1.5;
             white-space: pre-wrap;
         }
+        .response-box {
+            width: 100%;
+            min-height: 180px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: rgba(15, 20, 25, 0.6);
+            color: var(--text);
+            padding: 0.9rem;
+            font-size: 0.92rem;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            margin-top: 0.75rem;
+        }
     </style>
 </head>
-<body th:attr="data-copied-msg=#{chatgpt.copied},data-chatgpt-url=#{chatgpt.url},data-modal-title=#{chatgpt.modal.title},data-modal-copy=#{chatgpt.modal.copy},data-modal-open=#{chatgpt.modal.open},data-modal-close=#{chatgpt.modal.close}">
+<body th:attr="data-copied-msg=#{chatgpt.copied},data-chatgpt-url=#{chatgpt.url},data-modal-title=#{chatgpt.modal.title},data-modal-copy=#{chatgpt.modal.copy},data-modal-open=#{chatgpt.modal.open},data-modal-close=#{chatgpt.modal.close},data-modal-hint=#{chatgpt.modal.hint},data-modal-auto=#{chatgpt.modal.auto},data-modal-resp-hint=#{chatgpt.modal.resp_hint},data-modal-generating=#{chatgpt.modal.generating},data-modal-generating-body=#{chatgpt.modal.generating_body},data-modal-copy-failed=#{chatgpt.modal.copy_failed},data-modal-auto-failed=#{chatgpt.modal.auto_failed}">
 <div class="container">
     <nav class="lang-switcher" aria-label="Language">
         <a th:href="@{/(lang='tr')}" th:classappend="${#locale.language == 'tr'} ? 'active'" href="?lang=tr">Türkçe</a>
@@ -547,8 +570,15 @@
             <div class="modal-actions">
                 <button type="button" id="chatgptCopyBtn" class="btn-secondary">Copy prompt</button>
                 <button type="button" id="chatgptOpenBtn">Open ChatGPT</button>
+                <button type="button" id="chatgptAutoBtn">Auto-explain (EN+TR)</button>
+            </div>
+            <div class="modal-hint" id="chatgptHint">
+                We will copy the prompt. After ChatGPT opens, paste (Ctrl/Cmd+V) and press Enter.
             </div>
             <textarea class="prompt-box" id="chatgptPromptBox" readonly></textarea>
+            <div class="divider"></div>
+            <div class="modal-hint" id="chatgptRespHint">Automatic output will appear below (requires OPENAI_API_KEY).</div>
+            <div class="response-box" id="chatgptResponseBox"></div>
         </div>
     </div>
 </div>
@@ -644,6 +674,8 @@
     var promptBox = document.getElementById('chatgptPromptBox');
     var copyBtn = document.getElementById('chatgptCopyBtn');
     var openBtn = document.getElementById('chatgptOpenBtn');
+    var autoBtn = document.getElementById('chatgptAutoBtn');
+    var responseBox = document.getElementById('chatgptResponseBox');
     var lastPrompt = '';
 
     function setModalLabels() {
@@ -651,6 +683,11 @@
         copyBtn.textContent = document.body.getAttribute('data-modal-copy') || 'Copy prompt';
         openBtn.textContent = document.body.getAttribute('data-modal-open') || 'Open ChatGPT';
         modalClose.textContent = document.body.getAttribute('data-modal-close') || 'Close';
+        var hintEl = document.getElementById('chatgptHint');
+        if (hintEl) hintEl.textContent = document.body.getAttribute('data-modal-hint') || 'We will copy the prompt. After ChatGPT opens, paste (Ctrl/Cmd+V) and press Enter.';
+        var respHintEl = document.getElementById('chatgptRespHint');
+        if (respHintEl) respHintEl.textContent = document.body.getAttribute('data-modal-resp-hint') || 'Automatic output will appear below (requires OPENAI_API_KEY).';
+        if (autoBtn) autoBtn.textContent = document.body.getAttribute('data-modal-auto') || 'Auto-explain (EN+TR)';
     }
 
     function openModal(prompt) {
@@ -658,6 +695,7 @@
         setModalLabels();
         lastPrompt = prompt || '';
         promptBox.value = lastPrompt;
+        if (responseBox) responseBox.textContent = '';
         modal.classList.add('open');
         modal.setAttribute('aria-hidden', 'false');
         setTimeout(function() { promptBox.focus(); promptBox.select(); }, 0);
@@ -725,7 +763,7 @@
         copyText(lastPrompt).then(function() {
             showToast(copiedMsg);
         }).catch(function() {
-            showToast('Copy failed. Select the text and copy manually.');
+            showToast(document.body.getAttribute('data-modal-copy-failed') || 'Copy failed. Select the text and copy manually.');
         });
     });
     if (openBtn) openBtn.addEventListener('click', function() {
@@ -738,6 +776,45 @@
             openChatGpt();
         });
     });
+
+    function setAutoBusy(busy) {
+        if (!autoBtn) return;
+        autoBtn.disabled = !!busy;
+        autoBtn.textContent = busy
+                ? (document.body.getAttribute('data-modal-generating') || 'Generating…')
+                : (document.body.getAttribute('data-modal-auto') || 'Auto-explain (EN+TR)');
+    }
+
+    function autoExplain() {
+        if (!responseBox) return;
+        setAutoBusy(true);
+        responseBox.textContent = document.body.getAttribute('data-modal-generating-body') || 'Generating explanation…';
+        fetch('/explain', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: lastPrompt })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data || !data.ok) {
+                responseBox.textContent = (data && data.error)
+                        ? data.error
+                        : (document.body.getAttribute('data-modal-auto-failed') || 'Failed to generate explanation.');
+                return;
+            }
+            responseBox.textContent = data.response || '';
+        })
+        .catch(function(err) {
+            responseBox.textContent = (err && err.message)
+                    ? err.message
+                    : (document.body.getAttribute('data-modal-auto-failed') || 'Failed to generate explanation.');
+        })
+        .finally(function() {
+            setAutoBusy(false);
+        });
+    }
+
+    if (autoBtn) autoBtn.addEventListener('click', autoExplain);
 })();
 </script>
 </body>
