@@ -491,6 +491,11 @@ This writes:
 - `reports/report.md` (English)
 - `reports/report_tr.md` (Turkish)
 
+## Datasets & Evaluation Guide (EN/TR)
+
+- English: `docs/datasets_and_evaluation_en.md`
+- Türkçe: `docs/datasets_and_evaluation_tr.md`
+
 Generate a JSON report:
 
 ```bash

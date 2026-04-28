@@ -85,7 +85,7 @@ public class WebController {
         model.addAttribute("defaultText", defaultText);
 
         if (reqs.isEmpty()) {
-            model.addAttribute("result", new ViewResult(List.of(), List.of()));
+            model.addAttribute("result", new ViewResult(List.of(), List.of(), reqs));
             model.addAttribute("requirementCount", 0);
             model.addAttribute("mlEnabled", Pipeline.isMlSimilarityEnabled());
             return "index";
@@ -95,7 +95,7 @@ public class WebController {
         List<AmbiguityRow> sortedAmb = result.ambiguity().stream()
                 .sorted(Comparator.<AmbiguityRow>comparingDouble(r -> -r.score()).thenComparing(AmbiguityRow::rid))
                 .collect(Collectors.toList());
-        model.addAttribute("result", new ViewResult(sortedAmb, result.conflicts()));
+        model.addAttribute("result", new ViewResult(sortedAmb, result.conflicts(), reqs));
         model.addAttribute("requirementCount", reqs.size());
         model.addAttribute("mlEnabled", Pipeline.isMlSimilarityEnabled());
         return "index";

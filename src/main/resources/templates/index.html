@@ -273,6 +273,27 @@
         .explain-link:hover { background: rgba(59, 130, 246, 0.12); border-color: var(--accent); }
         .cell-flex { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
         .cell-flex .cell-text { min-width: 0; white-space: pre-wrap; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            right: 1rem;
+            bottom: 1rem;
+            z-index: 9999;
+            max-width: min(520px, calc(100vw - 2rem));
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(26, 35, 50, 0.95);
+            box-shadow: var(--shadow);
+            color: var(--text);
+            font-size: 0.9rem;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 180ms ease, transform 180ms ease;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body th:attr="data-copied-msg=#{chatgpt.copied},data-chatgpt-url=#{chatgpt.url}">
@@ -409,7 +430,7 @@
                                 <div class="cell-text" th:text="${c.evidence}"></div>
                                 <a class="explain-link"
                                    href="#"
-                                   th:attr="data-prompt=${'Explain this possible conflict between two requirements. Identify whether it is likely redundancy or a true contradiction and propose an improved combined wording.\n\nLeft (' + c.leftId + ') vs Right (' + c.rightId + ')\nSimilarity: ' + #numbers.formatDecimal(c.similarity, 1, 2) + '\nKind: ' + c.kind + '\nEvidence: ' + c.evidence + '\n\nPlease answer in bullet points.'}"
+                                   th:attr="data-prompt=${'Explain this possible conflict between two requirements. Identify whether it is likely redundancy or a true contradiction and propose an improved combined wording.\n\nLeft (' + c.leftId + '): ' + c.leftText + '\nRight (' + c.rightId + '): ' + c.rightText + '\nSimilarity: ' + #numbers.formatDecimal(c.similarity, 1, 2) + '\nKind: ' + c.kind + '\nEvidence: ' + c.evidence + '\n\nPlease answer in bullet points.'}"
                                    th:text="#{btn.explain}">Explain</a>
                             </div>
                         </td>
@@ -448,6 +469,8 @@
         </div>
     </section>
 </div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (function() {
@@ -546,8 +569,19 @@
         } catch (e) { /* ignore */ }
 
         window.open(openUrl, '_blank', 'noopener,noreferrer');
-        // Small, non-blocking feedback
-        try { console.log(copiedMsg); } catch (e) { /* ignore */ }
+        showToast(copiedMsg);
+    }
+
+    var toastTimer = null;
+    function showToast(msg) {
+        var el = document.getElementById('toast');
+        if (!el) return;
+        el.textContent = msg || '';
+        el.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function() {
+            el.classList.remove('show');
+        }, 2200);
     }
 
     document.addEventListener('click', function(e) {
