@@ -2,19 +2,19 @@
 
 ## Değerlendirme (Belirsizlik)
 
-- Eşik (threshold): 0.50
-- Precision: 0.500
-- Recall: 1.000
-- F1: 0.667
+- Eşik (threshold; score'u 0/1 etikete çeviren sınır): 0.50
+- Precision (tahmin edilen positive'ların ne kadarı doğru): 0.500
+- Recall (gold positive'ların ne kadarı yakalandı): 1.000
+- F1 (Precision ve Recall'un harmonik ortalaması): 0.667
 - TP/FP/FN/TN: 1/1/0/3
 - Değerlendirilen satır: 5 (atlanmış: 10)
 
 ### En iyi eşik (threshold sweep)
 
-- En iyi eşik: 0.60
-- Precision: 1.000
-- Recall: 1.000
-- F1: 1.000
+- En iyi eşik (F1'i ençoklayan τ*): 0.60
+- Precision (tahmin edilen positive'ların ne kadarı doğru): 1.000
+- Recall (gold positive'ların ne kadarı yakalandı): 1.000
+- F1 (Precision ve Recall'un harmonik ortalaması): 1.000
 - TP/FP/FN/TN: 1/0/0/4
 
 ### Top 5 eşik (F1'e göre)

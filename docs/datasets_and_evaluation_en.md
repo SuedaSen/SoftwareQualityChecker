@@ -2,6 +2,12 @@
 
 This document explains—**from scratch**—how we go from a paper’s dataset to a runnable experiment in this repository, and how we generate **Precision/Recall/F1** reports.
 
+Quick glossary (one-sentence):
+- **Gold dataset** (human-labeled ground truth used to compute metrics).
+- **Threshold \(\tau\)** (cutoff that turns a score into a binary decision).
+- **Precision / Recall / F1** (classification metrics; F1 balances precision and recall).
+- **TP/FP/FN/TN** (confusion-matrix counts used to compute Precision/Recall/F1).
+
 ## 0) What this repository can evaluate today
 
 - **Ambiguity (single-requirement classification)**:

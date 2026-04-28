@@ -2,6 +2,16 @@
 
 This document summarizes the system outputs and evaluation results produced from the repository’s sample input and gold labels.
 
+## Quick glossary (terms used in this report)
+
+- F1 (harmonic mean of Precision and Recall; balances false positives and false negatives).
+- TP/FP/FN/TN (counts from the confusion matrix: true/false positives/negatives).
+- Precision (fraction of predicted positives that are correct).
+- Recall (fraction of gold positives that were found).
+- Threshold \(\tau\) (cutoff that turns a score into a binary prediction).
+- Gold dataset (human-labeled ground truth used for evaluation).
+- Threshold sweep (trying many \(\tau\) values to find \(\tau^\*\) that maximizes F1).
+
 ## 1) Inputs used
 
 - **Analysis input (CSV)**: `data/sample_requirements.csv`

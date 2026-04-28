@@ -2,6 +2,16 @@
 
 Bu doküman, repodaki örnek veri ile sistemin ürettiği çıktıları ve F1 değerlendirme sonuçlarını özetler.
 
+## Kısa sözlük (bu rapordaki terimler)
+
+- F1 (Precision ve Recall’un harmonik ortalaması; FP ve FN dengesini ölçer).
+- TP/FP/FN/TN (confusion matrix sayımları: doğru/yanlış positive/negative).
+- Precision (tahmin edilen positive’ların ne kadarı doğru).
+- Recall (gold positive’ların ne kadarı yakalandı).
+- Threshold / eşik \(\tau\) (skoru ikili tahmine çeviren sınır değeri).
+- Gold dataset (değerlendirme için insan tarafından etiketlenmiş “ground truth” veri).
+- Threshold sweep (çoklu \(\tau\) denemesi ile F1’i ençoklayan \(\tau^\*\) değerini bulma).
+
 ## 1) Kullanılan girdiler
 
 - **Analiz girdisi (CSV)**: `data/sample_requirements.csv`

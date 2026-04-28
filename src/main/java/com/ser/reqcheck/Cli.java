@@ -14,7 +14,8 @@ public final class Cli {
         if (args.length < 6 || !"--input".equals(args[0]) || !"--format".equals(args[2]) || !"--out".equals(args[4])) {
             System.err.println("Usage: java ... --input <path> --format csv|txt --out <path> " +
                     "[--out-format md|json] [--out-lang en|tr|both] " +
-                    "[--gold <gold.csv> --threshold <0..1>] [--sweep [--sweep-step <step>]]");
+                    "[--gold <gold.csv> --threshold <0..1>] [--sweep [--sweep-step <step>]] " +
+                    "[--max-amb-rows <n>] [--max-conf-rows <n>] [--max-text-len <n>]");
             System.exit(2);
         }
         String inputPath = args[1];
@@ -26,6 +27,9 @@ public final class Cli {
         double threshold = 0.5;
         boolean sweep = false;
         double sweepStep = 0.05;
+        int maxAmbRows = 500;
+        int maxConfRows = 500;
+        int maxTextLen = 400;
         for (int i = 6; i < args.length; ) {
             String a = args[i];
             if ("--sweep".equals(a)) {
@@ -40,6 +44,9 @@ public final class Cli {
             else if ("--gold".equals(a)) goldPath = v;
             else if ("--threshold".equals(a)) threshold = Double.parseDouble(v);
             else if ("--sweep-step".equals(a)) sweepStep = Double.parseDouble(v);
+            else if ("--max-amb-rows".equals(a)) maxAmbRows = Integer.parseInt(v);
+            else if ("--max-conf-rows".equals(a)) maxConfRows = Integer.parseInt(v);
+            else if ("--max-text-len".equals(a)) maxTextLen = Integer.parseInt(v);
             i += 2;
         }
 
@@ -47,40 +54,43 @@ public final class Cli {
         try {
             List<Requirement> reqs = RequirementsLoader.load(Path.of(inputPath), format);
             AnalysisResult result = Pipeline.analyze(reqs);
-            List<AmbiguityRow> amb = result.ambiguity().stream()
+            List<AmbiguityRow> ambAll = result.ambiguity().stream()
                     .sorted(Comparator.<AmbiguityRow>comparingDouble(r -> -r.score()).thenComparing(AmbiguityRow::rid))
                     .toList();
+            List<AmbiguityRow> amb = ambAll.stream().limit(Math.max(1, maxAmbRows)).toList();
+            List<ConflictCandidate> confAll = result.conflicts();
+            List<ConflictCandidate> conf = confAll.stream().limit(Math.max(1, maxConfRows)).toList();
 
             EvaluationResult eval = null;
             EvaluationResult bestEval = null;
             List<EvaluationResult> topSweep = null;
             if (goldPath != null && !goldPath.isBlank()) {
                 List<GoldAmbiguityRow> gold = GoldDatasetLoader.loadAmbiguityGoldCsv(Path.of(goldPath));
-                eval = AmbiguityEvaluator.evaluate(result.ambiguity(), gold, threshold);
+                eval = AmbiguityEvaluator.evaluate(ambAll, gold, threshold);
                 if (sweep) {
-                    bestEval = AmbiguityEvaluator.sweepBestF1(result.ambiguity(), gold, sweepStep);
-                    topSweep = AmbiguityEvaluator.sweepTopK(result.ambiguity(), gold, sweepStep, 5);
+                    bestEval = AmbiguityEvaluator.sweepBestF1(ambAll, gold, sweepStep);
+                    topSweep = AmbiguityEvaluator.sweepTopK(ambAll, gold, sweepStep, 5);
                 }
             }
 
             Path out = Path.of(outPath);
             Files.createDirectories(out.getParent());
             if ("json".equalsIgnoreCase(outFormat)) {
-                String content = ReportWriter.toJson(amb, result.conflicts());
+                String content = ReportWriter.toJson(amb, conf);
                 Files.writeString(out, content);
                 return;
             }
 
             if ("both".equalsIgnoreCase(outLang)) {
-                String en = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, bestEval, topSweep, ReportWriter.Lang.EN);
-                String tr = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, bestEval, topSweep, ReportWriter.Lang.TR);
+                String en = ReportWriter.toMarkdownLocalized(amb, conf, eval, bestEval, topSweep, maxTextLen, ambAll.size(), confAll.size(), ReportWriter.Lang.EN);
+                String tr = ReportWriter.toMarkdownLocalized(amb, conf, eval, bestEval, topSweep, maxTextLen, ambAll.size(), confAll.size(), ReportWriter.Lang.TR);
                 Files.writeString(out, en);
                 Files.writeString(siblingWithSuffix(out, "_tr"), tr);
             } else if ("tr".equalsIgnoreCase(outLang)) {
-                String tr = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, bestEval, topSweep, ReportWriter.Lang.TR);
+                String tr = ReportWriter.toMarkdownLocalized(amb, conf, eval, bestEval, topSweep, maxTextLen, ambAll.size(), confAll.size(), ReportWriter.Lang.TR);
                 Files.writeString(out, tr);
             } else {
-                String en = ReportWriter.toMarkdownLocalized(amb, result.conflicts(), eval, bestEval, topSweep, ReportWriter.Lang.EN);
+                String en = ReportWriter.toMarkdownLocalized(amb, conf, eval, bestEval, topSweep, maxTextLen, ambAll.size(), confAll.size(), ReportWriter.Lang.EN);
                 Files.writeString(out, en);
             }
         } catch (IOException | CsvException e) {

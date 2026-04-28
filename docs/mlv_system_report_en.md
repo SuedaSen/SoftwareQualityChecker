@@ -2,6 +2,17 @@
 
 This report summarizes the outputs and **F1 evaluation** produced on the extracted MLV requirements file.
 
+## Quick glossary (terms used in this report)
+
+- F1 (harmonic mean of Precision and Recall; balances false positives and false negatives).
+- TP/FP/FN/TN (confusion matrix counts: true/false positives/negatives).
+- Precision (fraction of predicted positives that are correct).
+- Recall (fraction of gold positives that were found).
+- Threshold \(\tau\) (cutoff that turns a score into a binary prediction).
+- Gold dataset (human-labeled ground truth used for evaluation).
+- Threshold sweep (try many \(\tau\) values to find \(\tau^\*\) that maximizes F1).
+- Skipped rows (items without a gold label; not used for F1 but still shown in findings).
+
 ## 1) Inputs used
 
 - **Analysis input (CSV)**: `data/external/mlv/mlv_requirements_v1_5.csv`

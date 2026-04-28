@@ -2,19 +2,19 @@
 
 ## Evaluation (Ambiguity)
 
-- Threshold: 0.50
-- Precision: 0.500
-- Recall: 1.000
-- F1: 0.667
+- Threshold (cutoff that turns score into 0/1 label): 0.50
+- Precision (fraction of predicted positives that are correct): 0.500
+- Recall (fraction of gold positives that were found): 1.000
+- F1 (harmonic mean of Precision and Recall): 0.667
 - TP/FP/FN/TN: 1/1/0/3
 - Evaluated rows: 5 (skipped: 10)
 
 ### Best threshold (threshold sweep)
 
-- Best threshold: 0.60
-- Precision: 1.000
-- Recall: 1.000
-- F1: 1.000
+- Best threshold (τ* that maximizes F1): 0.60
+- Precision (fraction of predicted positives that are correct): 1.000
+- Recall (fraction of gold positives that were found): 1.000
+- F1 (harmonic mean of Precision and Recall): 1.000
 - TP/FP/FN/TN: 1/0/0/4
 
 ### Top 5 thresholds (by F1)

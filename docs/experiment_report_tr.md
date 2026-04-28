@@ -2,6 +2,14 @@
 
 Bu rapor, bu repoda **belirsizlik (ambiguity)** değerlendirmesi için uçtan uca bir deneyi; **formüller**, **varsayımlar** ve **tekrarlanabilir komutlarla** belgeler.
 
+Kısa sözlük (1 cümle):
+- **Gold dataset** (tahminleri ölçmek için insan tarafından etiketlenmiş “ground truth” veri).
+- **Threshold / eşik \(\tau\)** (skoru \(s(r)\) ikili etikete çeviren sınır değer).
+- **TP/FP/FN/TN** (confusion matrix sayımları: doğru/yanlış positive/negative).
+- **Precision** (tahmin edilen positive’ların ne kadarı doğru).
+- **Recall** (gold positive’ların ne kadarı yakalandı).
+- **F1-score** (Precision ve Recall’un harmonik ortalaması; FP ve FN dengesini ölçer).
+
 > Kapsam: Etiketli gold dosyası ile **belirsizlik** için *binary classification* değerlendirmesi.  
 > Kapsam dışı (şimdilik): çift bazlı **tutarsızlık/conflict** değerlendirmesi (pair-level gold gerekir).
 

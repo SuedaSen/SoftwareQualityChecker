@@ -2,6 +2,12 @@
 
 Bu doküman, **sıfırdan** başlayarak bir makaledeki dataset’i alıp bu repoda nasıl koşturacağımızı ve **Precision/Recall/F1** raporlarını nasıl üreteceğimizi anlatır.
 
+Kısa sözlük (1 cümle):
+- **Gold dataset** (metrikleri hesaplamak için insan tarafından etiketlenmiş “ground truth” veri).
+- **Threshold / eşik \(\tau\)** (skoru ikili karara çeviren sınır değer).
+- **Precision / Recall / F1** (sınıflandırma metrikleri; F1 precision ve recall dengesini ölçer).
+- **TP/FP/FN/TN** (Precision/Recall/F1 hesaplamak için kullanılan confusion matrix sayımları).
+
 ## 0) Bu repo bugün neyi değerlendirebiliyor?
 
 - **Belirsizlik (tek gereksinim sınıflandırma)**:

@@ -25,6 +25,20 @@ public final class ReportWriter {
     }
 
     public static String toMarkdownLocalized(List<AmbiguityRow> ambiguity, List<ConflictCandidate> conflicts, EvaluationResult eval, EvaluationResult bestEval, List<EvaluationResult> topSweep, Lang lang) {
+        return toMarkdownLocalized(ambiguity, conflicts, eval, bestEval, topSweep, 400, ambiguity.size(), conflicts.size(), lang);
+    }
+
+    public static String toMarkdownLocalized(
+            List<AmbiguityRow> ambiguity,
+            List<ConflictCandidate> conflicts,
+            EvaluationResult eval,
+            EvaluationResult bestEval,
+            List<EvaluationResult> topSweep,
+            int maxTextLen,
+            int totalAmbiguityRows,
+            int totalConflictRows,
+            Lang lang
+    ) {
         StringBuilder sb = new StringBuilder();
 
         String title = (lang == Lang.TR) ? "Gereksinim Kalite Raporu" : "Requirement Quality Report";
@@ -45,12 +59,27 @@ public final class ReportWriter {
 
         sb.append("# ").append(title).append("\n\n");
 
+        int shownAmb = ambiguity == null ? 0 : ambiguity.size();
+        int shownConf = conflicts == null ? 0 : conflicts.size();
+        String infoLabel = (lang == Lang.TR) ? "Not" : "Note";
+        sb.append("> ").append(infoLabel).append(": ")
+                .append((lang == Lang.TR) ? "Bu rapor kısaltılmıştır" : "This report is summarized")
+                .append(" — ")
+                .append((lang == Lang.TR) ? "Belirsizlik satırları" : "Ambiguity rows")
+                .append(": ").append(shownAmb).append("/").append(totalAmbiguityRows)
+                .append(", ")
+                .append((lang == Lang.TR) ? "tutarsızlık adayları" : "conflict candidates")
+                .append(": ").append(shownConf).append("/").append(totalConflictRows)
+                .append(". ")
+                .append((lang == Lang.TR) ? "Metinler çok uzunsa kısaltılır." : "Long texts may be truncated.")
+                .append("\n\n");
+
         if (eval != null) {
             sb.append("## ").append(evalTitle).append("\n\n");
-            sb.append("- ").append((lang == Lang.TR) ? "Eşik (threshold)" : "Threshold").append(": ").append(String.format("%.2f", eval.threshold())).append("\n");
-            sb.append("- Precision: ").append(String.format("%.3f", eval.precision())).append("\n");
-            sb.append("- Recall: ").append(String.format("%.3f", eval.recall())).append("\n");
-            sb.append("- F1: ").append(String.format("%.3f", eval.f1())).append("\n");
+            sb.append("- ").append((lang == Lang.TR) ? "Eşik (threshold; score'u 0/1 etikete çeviren sınır)" : "Threshold (cutoff that turns score into 0/1 label)").append(": ").append(String.format("%.2f", eval.threshold())).append("\n");
+            sb.append("- ").append((lang == Lang.TR) ? "Precision (tahmin edilen positive'ların ne kadarı doğru)" : "Precision (fraction of predicted positives that are correct)").append(": ").append(String.format("%.3f", eval.precision())).append("\n");
+            sb.append("- ").append((lang == Lang.TR) ? "Recall (gold positive'ların ne kadarı yakalandı)" : "Recall (fraction of gold positives that were found)").append(": ").append(String.format("%.3f", eval.recall())).append("\n");
+            sb.append("- ").append((lang == Lang.TR) ? "F1 (Precision ve Recall'un harmonik ortalaması)" : "F1 (harmonic mean of Precision and Recall)").append(": ").append(String.format("%.3f", eval.f1())).append("\n");
             sb.append("- TP/FP/FN/TN: ").append(eval.tp()).append("/")
                     .append(eval.fp()).append("/")
                     .append(eval.fn()).append("/")
@@ -63,10 +92,10 @@ public final class ReportWriter {
         if (bestEval != null) {
             String bestTitle = (lang == Lang.TR) ? "En iyi eşik (threshold sweep)" : "Best threshold (threshold sweep)";
             sb.append("### ").append(bestTitle).append("\n\n");
-            sb.append("- ").append((lang == Lang.TR) ? "En iyi eşik" : "Best threshold").append(": ").append(String.format("%.2f", bestEval.threshold())).append("\n");
-            sb.append("- Precision: ").append(String.format("%.3f", bestEval.precision())).append("\n");
-            sb.append("- Recall: ").append(String.format("%.3f", bestEval.recall())).append("\n");
-            sb.append("- F1: ").append(String.format("%.3f", bestEval.f1())).append("\n");
+            sb.append("- ").append((lang == Lang.TR) ? "En iyi eşik (F1'i ençoklayan τ*)" : "Best threshold (τ* that maximizes F1)").append(": ").append(String.format("%.2f", bestEval.threshold())).append("\n");
+            sb.append("- ").append((lang == Lang.TR) ? "Precision (tahmin edilen positive'ların ne kadarı doğru)" : "Precision (fraction of predicted positives that are correct)").append(": ").append(String.format("%.3f", bestEval.precision())).append("\n");
+            sb.append("- ").append((lang == Lang.TR) ? "Recall (gold positive'ların ne kadarı yakalandı)" : "Recall (fraction of gold positives that were found)").append(": ").append(String.format("%.3f", bestEval.recall())).append("\n");
+            sb.append("- ").append((lang == Lang.TR) ? "F1 (Precision ve Recall'un harmonik ortalaması)" : "F1 (harmonic mean of Precision and Recall)").append(": ").append(String.format("%.3f", bestEval.f1())).append("\n");
             sb.append("- TP/FP/FN/TN: ").append(bestEval.tp()).append("/")
                     .append(bestEval.fp()).append("/")
                     .append(bestEval.fn()).append("/")
@@ -97,7 +126,7 @@ public final class ReportWriter {
         ambiguity.stream()
                 .sorted(Comparator.<AmbiguityRow>comparingDouble(r -> -r.score()).thenComparing(AmbiguityRow::rid))
                 .forEach(r -> {
-                    String text = r.text().replace("\n", " ").trim();
+                    String text = truncate(r.text().replace("\n", " ").trim(), maxTextLen);
                     String reasons = String.join("; ", r.reasons());
                     sb.append("| ").append(r.rid()).append(" | ").append(String.format("%.2f", r.score()))
                             .append(" | ").append(text).append(" | ").append(reasons).append(" |\n");
@@ -113,7 +142,7 @@ public final class ReportWriter {
         for (ConflictCandidate c : conflicts) {
             sb.append("| ").append(c.leftId()).append(" | ").append(c.rightId())
                     .append(" | ").append(String.format("%.2f", c.similarity()))
-                    .append(" | ").append(c.kind()).append(" | ").append(c.evidence()).append(" |\n");
+                    .append(" | ").append(c.kind()).append(" | ").append(truncate(c.evidence(), maxTextLen)).append(" |\n");
         }
         return sb.toString();
     }
@@ -139,5 +168,12 @@ public final class ReportWriter {
     private static String escape(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+    }
+
+    private static String truncate(String s, int maxLen) {
+        if (s == null) return "";
+        int m = Math.max(50, maxLen);
+        if (s.length() <= m) return s;
+        return s.substring(0, m - 1) + "…";
     }
 }

@@ -2,6 +2,14 @@
 
 This report documents an end-to-end experiment for **ambiguity detection evaluation** in this repository, including **formulas**, **assumptions**, and **reproducible commands**.
 
+Quick glossary (one-sentence):
+- **Gold dataset** (human-labeled ground truth used to evaluate predictions).
+- **Threshold \(\tau\)** (cutoff that converts a score \(s(r)\) into a binary label).
+- **TP/FP/FN/TN** (confusion-matrix counts: true/false positives/negatives).
+- **Precision** (fraction of predicted positives that are correct).
+- **Recall** (fraction of gold positives that were found).
+- **F1-score** (harmonic mean of Precision and Recall; balances FP and FN).
+
 > Scope: This experiment evaluates **ambiguity** as a *binary classification* task using a labeled gold file.  
 > Out of scope (for now): pairwise **conflict** evaluation (needs a pair-labeled gold dataset).
 
